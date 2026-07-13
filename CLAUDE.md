@@ -42,3 +42,4 @@ Slices in order:
 - After each slice: `npm run build` must pass clean before considering it done
 - Verify RLS by querying as a second test user
 - Streak/XP logic: write unit tests for the edge cases (midnight boundary in Mexico City TZ, rest-day counting, streak reset preserving XP)
+## Deferred: Google OAuth — enable provider in Supabase dashboard + Google Cloud credentials before production deploy
