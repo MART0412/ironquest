@@ -192,6 +192,34 @@ export function WorkoutCheckoff({
           )}
         </div>
 
+        {result.unlocks.length > 0 && (
+          <div className="w-full rounded-xl border border-primary/30 bg-primary/5 p-4 text-left">
+            <p className="text-sm font-medium">🔓 Skill unlocked</p>
+            <ul className="mt-1 flex flex-col gap-1">
+              {result.unlocks.map((u) => (
+                <li key={u.exercise_id} className="text-sm text-muted-foreground">
+                  {u.name} <span className="text-foreground">+{u.xp} XP</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {result.prs.length > 0 && (
+          <div className="w-full rounded-xl border border-primary/30 bg-primary/5 p-4 text-left">
+            <p className="text-sm font-medium">🏅 Personal record</p>
+            <ul className="mt-1 flex flex-col gap-1">
+              {result.prs.map((pr) => (
+                <li key={pr.exercise_id} className="text-sm text-muted-foreground">
+                  {pr.name} — {pr.value}
+                  {pr.metric === "seconds" ? "s" : " reps"}{" "}
+                  <span className="text-foreground">+{pr.xp} XP</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="flex w-full flex-col gap-3">
           <Link href="/" className={buttonVariants({ size: "lg" })}>
             Back home

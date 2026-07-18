@@ -8,6 +8,24 @@ import {
   type CompleteWorkoutInput,
 } from "@/lib/validations/workouts"
 
+export type SkillUnlock = {
+  exercise_id: string
+  slug: string
+  name: string
+  branch: string
+  tier: number
+  xp: number
+}
+
+export type PersonalRecord = {
+  exercise_id: string
+  slug: string
+  name: string
+  metric: "reps" | "seconds"
+  value: number
+  xp: number
+}
+
 /** Shape of the jsonb returned by the complete_workout engine. */
 export type CompleteWorkoutResult = {
   workout_id: string
@@ -18,6 +36,8 @@ export type CompleteWorkoutResult = {
   multiplier: number
   milestones: number
   reset: boolean
+  unlocks: SkillUnlock[]
+  prs: PersonalRecord[]
 }
 
 export async function completeWorkout(
