@@ -11,6 +11,7 @@ import {
   type CompleteWorkoutResult,
 } from "@/lib/actions/workouts"
 import type { Weekday } from "@/lib/data/splits"
+import { SKILL_UNLOCK_XP } from "@/lib/game/skills"
 import { cn } from "@/lib/utils"
 
 type CheckoffItem = {
@@ -57,6 +58,9 @@ export function WorkoutCheckoff({
   const [checked, setChecked] = useState<Checked>({})
   const [adjusting, setAdjusting] = useState<number | null>(null)
   const [result, setResult] = useState<CompleteWorkoutResult | null>(null)
+  // Index into result.unlocks while the celebration plays; once past the end,
+  // the normal summary shows.
+  const [celebrateIdx, setCelebrateIdx] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -141,6 +145,7 @@ export function WorkoutCheckoff({
       if ("error" in response) {
         setError(response.error)
       } else {
+        setCelebrateIdx(0)
         setResult(response.result)
       }
     })
@@ -151,6 +156,41 @@ export function WorkoutCheckoff({
     : 0
 
   // ------------------------------------------------------------------ views
+
+  // Full-screen unlock moment(s), played before the summary is revealed.
+  if (result && celebrateIdx < result.unlocks.length) {
+    const unlock = result.unlocks[celebrateIdx]
+    const total = result.unlocks.length
+    return (
+      <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col items-center justify-center gap-8 px-6 py-10 text-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="text-6xl">🔓</div>
+          <p className="text-sm font-medium tracking-wide text-primary uppercase">
+            Skill unlocked
+          </p>
+          <h1 className="font-heading text-4xl font-semibold">{unlock.name}</h1>
+          {total > 1 && (
+            <p className="text-xs text-muted-foreground">
+              {celebrateIdx + 1} of {total}
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col items-center gap-1">
+          <p className="text-3xl font-semibold">+{unlock.xp} XP</p>
+          <p className="text-muted-foreground">+{SKILL_UNLOCK_XP.points} points</p>
+        </div>
+
+        <Button
+          size="lg"
+          className="h-12 w-full"
+          onClick={() => setCelebrateIdx((i) => i + 1)}
+        >
+          {celebrateIdx + 1 < total ? "Next unlock" : "Continue"}
+        </Button>
+      </main>
+    )
+  }
 
   if (result) {
     return (
