@@ -286,9 +286,11 @@ export type Database = {
       }
       rewards: {
         Row: {
+          archived_at: string | null
           cost_points: number
           created_at: string
           id: string
+          note: string | null
           redeemed_at: string | null
           title: string
           type: string
@@ -296,9 +298,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          archived_at?: string | null
           cost_points: number
           created_at?: string
           id?: string
+          note?: string | null
           redeemed_at?: string | null
           title: string
           type: string
@@ -306,9 +310,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          archived_at?: string | null
           cost_points?: number
           created_at?: string
           id?: string
+          note?: string | null
           redeemed_at?: string | null
           title?: string
           type?: string
@@ -601,6 +607,7 @@ export type Database = {
         }
         Returns: Json
       }
+      redeem_reward: { Args: { p_reward_id: string }; Returns: Json }
       save_routine: {
         Args: {
           p_day_of_week: string[]

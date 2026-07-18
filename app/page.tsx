@@ -146,12 +146,18 @@ export default async function Home() {
         </Link>
       </section>
 
-      <section className="grid grid-cols-2 gap-3" aria-label="Explore">
+      <section className="grid grid-cols-3 gap-3" aria-label="Explore">
         <Link
           href="/skills"
           className={buttonVariants({ variant: "outline", size: "lg" })}
         >
-          Skill tree
+          Skills
+        </Link>
+        <Link
+          href="/store"
+          className={buttonVariants({ variant: "outline", size: "lg" })}
+        >
+          Store
         </Link>
         <Link
           href="/profile"
