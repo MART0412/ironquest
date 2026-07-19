@@ -6,7 +6,6 @@ import { useActionState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { GoogleButton } from "@/components/auth/google-button"
 import type { AuthState } from "@/lib/actions/auth"
 
 type Mode = "signin" | "signup"
@@ -48,14 +47,6 @@ export function AuthForm({
         <p className="text-sm text-muted-foreground">
           IronQuest — train, eat, level up.
         </p>
-      </div>
-
-      <GoogleButton />
-
-      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-        <span className="h-px flex-1 bg-border" />
-        or
-        <span className="h-px flex-1 bg-border" />
       </div>
 
       <form action={formAction} className="flex flex-col gap-4">
