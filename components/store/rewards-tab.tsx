@@ -1,7 +1,6 @@
 "use client"
 
 import { Archive, ArchiveRestore, Pencil, Plus, X } from "lucide-react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useMemo, useState, useTransition } from "react"
 
@@ -37,7 +36,7 @@ const dateFmt = new Intl.DateTimeFormat("en", {
 type FormState = { id: string | null; title: string; cost: string; note: string }
 const EMPTY_FORM: FormState = { id: null, title: "", cost: "", note: "" }
 
-export function StoreView({
+export function RewardsTab({
   balance,
   rewards,
 }: {
@@ -113,20 +112,7 @@ export function StoreView({
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col gap-6 px-6 py-8">
-      <header className="flex items-start justify-between">
-        <div>
-          <Link href="/" className="text-sm text-muted-foreground underline underline-offset-4">
-            ← Home
-          </Link>
-          <h1 className="mt-1 font-heading text-2xl font-semibold">Rewards store</h1>
-        </div>
-        <div className="text-right">
-          <p className="text-2xl font-semibold tabular-nums">{balance}</p>
-          <p className="text-xs text-muted-foreground">points</p>
-        </div>
-      </header>
-
+    <div className="flex flex-col gap-6">
       {error && (
         <p className="text-sm text-destructive" role="alert">
           {error}
@@ -142,7 +128,6 @@ export function StoreView({
         </div>
       )}
 
-      {/* Active catalog */}
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <h2 className="font-heading text-lg font-medium">Your rewards</h2>
@@ -216,7 +201,6 @@ export function StoreView({
         </ul>
       </section>
 
-      {/* Archived */}
       {archived.length > 0 && (
         <section className="flex flex-col gap-2">
           <h2 className="font-heading text-sm font-medium text-muted-foreground">
@@ -247,7 +231,6 @@ export function StoreView({
         </section>
       )}
 
-      {/* Redemption history — the receipt trail */}
       {history.length > 0 && (
         <section className="flex flex-col gap-2">
           <h2 className="font-heading text-lg font-medium">Redemption history</h2>
@@ -272,7 +255,6 @@ export function StoreView({
         </section>
       )}
 
-      {/* Create / edit form */}
       {form && (
         <RewardForm
           form={form}
@@ -286,7 +268,6 @@ export function StoreView({
         />
       )}
 
-      {/* Redeem confirmation */}
       {confirming && (
         <ConfirmRedeem
           reward={confirming}
@@ -296,7 +277,7 @@ export function StoreView({
           onCancel={() => setConfirming(null)}
         />
       )}
-    </main>
+    </div>
   )
 }
 
@@ -357,7 +338,6 @@ function RewardForm({
           />
         </div>
 
-        {/* Pricing guide (spec §2.3) */}
         <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
           <p className="font-medium text-foreground">Pricing guide</p>
           <p className="mt-1">

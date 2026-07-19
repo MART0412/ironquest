@@ -1,7 +1,11 @@
 import { redirect } from "next/navigation"
 
-import { StoreView, type RewardRow } from "@/components/store/store-view"
+import { type CosmeticRow } from "@/components/store/cosmetics-tab"
+import { type RewardRow } from "@/components/store/rewards-tab"
+import { StoreTabs } from "@/components/store/store-tabs"
 import { createClient } from "@/lib/supabase/server"
+
+type CosmeticMeta = { accent?: string; slot?: string }
 
 export default async function StorePage() {
   const supabase = await createClient()
@@ -10,18 +14,30 @@ export default async function StorePage() {
   } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
-  const [{ data: ledger }, { data: rewards }] = await Promise.all([
+  const [
+    { data: ledger },
+    { data: rewards },
+    { data: cosmetics },
+    { data: owned },
+    { data: equipped },
+  ] = await Promise.all([
     supabase.from("xp_ledger").select("points"),
     supabase
       .from("rewards")
       .select("id, title, cost_points, note, redeemed_at, archived_at, created_at")
       .eq("type", "real_life")
       .order("created_at", { ascending: false }),
+    supabase
+      .from("cosmetics")
+      .select("id, slug, name, type, cost_points, metadata, sort_order")
+      .order("sort_order"),
+    supabase.from("cosmetic_unlocks").select("cosmetic_id"),
+    supabase.from("cosmetic_equipped").select("cosmetic_id"),
   ])
 
   const balance = (ledger ?? []).reduce((sum, r) => sum + r.points, 0)
 
-  const rows: RewardRow[] = (rewards ?? []).map((r) => ({
+  const rewardRows: RewardRow[] = (rewards ?? []).map((r) => ({
     id: r.id,
     title: r.title,
     costPoints: r.cost_points,
@@ -30,5 +46,22 @@ export default async function StorePage() {
     archivedAt: r.archived_at,
   }))
 
-  return <StoreView balance={balance} rewards={rows} />
+  const ownedIds = new Set((owned ?? []).map((o) => o.cosmetic_id))
+  const equippedIds = new Set((equipped ?? []).map((e) => e.cosmetic_id))
+  const cosmeticRows: CosmeticRow[] = (cosmetics ?? []).map((c) => {
+    const meta = (c.metadata ?? {}) as CosmeticMeta
+    return {
+      id: c.id,
+      slug: c.slug,
+      name: c.name,
+      type: c.type as CosmeticRow["type"],
+      costPoints: c.cost_points,
+      accent: meta.accent ?? null,
+      slot: meta.slot ?? null,
+      owned: ownedIds.has(c.id),
+      equipped: equippedIds.has(c.id),
+    }
+  })
+
+  return <StoreTabs balance={balance} rewards={rewardRows} cosmetics={cosmeticRows} />
 }

@@ -87,6 +87,91 @@ export type Database = {
         }
         Relationships: []
       }
+      cosmetic_equipped: {
+        Row: {
+          cosmetic_id: string
+          equipped_at: string
+          user_id: string
+        }
+        Insert: {
+          cosmetic_id: string
+          equipped_at?: string
+          user_id: string
+        }
+        Update: {
+          cosmetic_id?: string
+          equipped_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cosmetic_equipped_cosmetic_id_fkey"
+            columns: ["cosmetic_id"]
+            isOneToOne: false
+            referencedRelation: "cosmetics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cosmetic_unlocks: {
+        Row: {
+          cosmetic_id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          cosmetic_id: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          cosmetic_id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cosmetic_unlocks_cosmetic_id_fkey"
+            columns: ["cosmetic_id"]
+            isOneToOne: false
+            referencedRelation: "cosmetics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cosmetics: {
+        Row: {
+          cost_points: number
+          created_at: string
+          id: string
+          metadata: Json
+          name: string
+          slug: string
+          sort_order: number
+          type: string
+        }
+        Insert: {
+          cost_points: number
+          created_at?: string
+          id?: string
+          metadata?: Json
+          name: string
+          slug: string
+          sort_order?: number
+          type: string
+        }
+        Update: {
+          cost_points?: number
+          created_at?: string
+          id?: string
+          metadata?: Json
+          name?: string
+          slug?: string
+          sort_order?: number
+          type?: string
+        }
+        Relationships: []
+      }
       exercises: {
         Row: {
           branch: string
@@ -607,6 +692,7 @@ export type Database = {
         }
         Returns: Json
       }
+      purchase_cosmetic: { Args: { p_cosmetic_id: string }; Returns: Json }
       redeem_reward: { Args: { p_reward_id: string }; Returns: Json }
       save_routine: {
         Args: {
@@ -616,6 +702,15 @@ export type Database = {
           p_name: string
         }
         Returns: string
+      }
+      spend_points: {
+        Args: {
+          p_action: string
+          p_amount: number
+          p_ref: string
+          p_user: string
+        }
+        Returns: number
       }
     }
     Enums: {
