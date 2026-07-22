@@ -7,6 +7,7 @@ import { StatRadar } from "@/components/profile/stat-radar"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { levelFromXp } from "@/lib/game/level"
+import { multiplierFor } from "@/lib/game/streak"
 import { BRANCH_ORDER, type BranchKey } from "@/lib/game/skill-tree"
 import { computeStats } from "@/lib/game/stats"
 import { createClient } from "@/lib/supabase/server"
@@ -26,6 +27,7 @@ export default async function ProfilePage() {
     { data: exercises },
     { data: unlocks },
     { data: equipped },
+    { data: streak },
   ] = await Promise.all([
     supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
     supabase.from("xp_ledger").select("xp"),
@@ -35,10 +37,17 @@ export default async function ProfilePage() {
     supabase
       .from("cosmetic_equipped")
       .select("cosmetics!inner(name, type, metadata)"),
+    supabase
+      .from("streaks")
+      .select("current_len, best_len")
+      .eq("user_id", user.id)
+      .maybeSingle(),
   ])
 
   const totalXp = (ledger ?? []).reduce((sum, r) => sum + r.xp, 0)
   const { level } = levelFromXp(totalXp)
+  const streakLen = streak?.current_len ?? 0
+  const bestLen = streak?.best_len ?? 0
 
   // Equipped cosmetics → title text, theme accent, gear slots.
   let equippedTitle: string | null = null
@@ -103,6 +112,18 @@ export default async function ProfilePage() {
           )}
           <p className="mt-0.5 text-sm text-muted-foreground">
             Level {level} · {unlockedCount} skill{unlockedCount === 1 ? "" : "s"} unlocked
+          </p>
+          <p className="mt-1 text-sm font-medium">
+            🔥 {streakLen}-day streak
+            {streakLen > 0 && (
+              <span className="text-muted-foreground">
+                {" "}
+                ×{multiplierFor(streakLen).toFixed(2)}
+              </span>
+            )}
+            {bestLen > streakLen && (
+              <span className="text-muted-foreground"> · best {bestLen}</span>
+            )}
           </p>
         </div>
       </header>
