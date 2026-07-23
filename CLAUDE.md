@@ -19,7 +19,7 @@ Gamified calisthenics + nutrition PWA. Full product spec lives in `docs/spec.md`
 4. **Every logging flow must be completable in under 20 seconds.** If a feature adds taps to workout check-off or meal logging, flag it before building.
 5. **One vertical slice per session.** Don't scaffold ahead of the current slice. No placeholder pages for future phases.
 6. **XP/points mutations go through a single server-side function** (`xp_ledger` insert + derived updates). Never award XP from client code.
-7. **Phase discipline:** we are in Phase 1 (core loop) unless told otherwise. Do not implement skill tree UI, points store, AI meal estimation, or check-in photos until their phase.
+7. **Phase discipline:** we are in **Phase 3 (intelligence)** as of 2026-07-22 (Phases 1 & 2 complete — see phase status below). Do not implement Phase 4 work (training paths / multiclassing, body evolution) until its phase.
 
 ## Conventions
 - Server actions for mutations; React Query for client cache where needed
@@ -29,14 +29,15 @@ Gamified calisthenics + nutrition PWA. Full product spec lives in `docs/spec.md`
 - Units metric (kg, cm, km); kcal for energy
 - Spanish/English food names both expected in food logging — don't assume English
 
-## Current phase: 1 — Core loop
-Slices in order:
-1. Auth (Supabase email + Google) + onboarding (profile, TDEE calc, targets, split selection)
-2. Full schema migration (all tables from spec §8, with RLS)
-3. Routine builder + 3 seeded template splits
-4. Workout check-off logging + XP/streak engine
-5. Home screen / character sheet (level, XP bar, streak, today's quest, macro rings)
-6. Manual food logging + My Foods library
+## Phase status
+- **Phase 1 — Core loop: ✅ complete.** Auth + onboarding (TDEE/targets/split), full schema + RLS, routine builder + 3 template splits, workout check-off + XP/streak engine, home/character sheet, manual food logging + My Foods.
+- **Phase 2 — Game layer: ✅ complete (verified 2026-07-22).** Skill-unlock + PR engine, skill tree UI + stat radar + full-screen unlock celebration, points store (real-life rewards, atomic redeem), cosmetics tab + layered avatar. Deferred to the docs/notes.md backlog: app-wide art-style themes (B1), man/woman character selection (B2-base).
+- **Current phase: 3 — Intelligence.** Slices in order:
+  1. AI meal macro estimation (Claude API — CLAUDE.md pins claude-sonnet-4-6; confirm/refresh the model at build time)
+  2. Meal compensation feature (strict/neutral, comp quests)
+  3. Open Food Facts + barcode lookup
+  4. Weekly check-in flow (weight + measurements + photos → `checkins`, Storage bucket)
+- **Phase 4 — Productization (later):** training paths / multiclassing (B3), body evolution by training style (B2-evolution). Schema note: a future `exercises` migration generalizes `branch` → `path + branch`.
 
 ## Testing / verification
 - After each slice: `npm run build` must pass clean before considering it done
