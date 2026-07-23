@@ -315,6 +315,7 @@ export type Database = {
       profiles: {
         Row: {
           activity_factor: number | null
+          avatar_character: string | null
           cal_target: number | null
           carbs_g: number | null
           created_at: string
@@ -333,6 +334,7 @@ export type Database = {
         }
         Insert: {
           activity_factor?: number | null
+          avatar_character?: string | null
           cal_target?: number | null
           carbs_g?: number | null
           created_at?: string
@@ -351,6 +353,7 @@ export type Database = {
         }
         Update: {
           activity_factor?: number | null
+          avatar_character?: string | null
           cal_target?: number | null
           carbs_g?: number | null
           created_at?: string

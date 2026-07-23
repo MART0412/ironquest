@@ -1,13 +1,16 @@
 import { Avatar } from "@/components/profile/avatar"
 import { Progress } from "@/components/ui/progress"
+import type { AvatarCharacter } from "@/lib/game/avatar"
 import { levelFromXp } from "@/lib/game/level"
 
 export function CharacterHeader({
   displayName,
   totalXp,
+  character = "man",
 }: {
   displayName: string
   totalXp: number
+  character?: AvatarCharacter
 }) {
   const { level, intoLevel, nextThreshold, currentThreshold, progress } =
     levelFromXp(totalXp)
@@ -17,7 +20,7 @@ export function CharacterHeader({
     <section className="flex items-center gap-4" aria-label="Character">
       <div className="relative shrink-0">
         <div className="flex size-16 items-center justify-center overflow-hidden rounded-full bg-muted">
-          <Avatar level={level} className="h-full w-auto" />
+          <Avatar level={level} character={character} className="h-full w-auto" />
         </div>
         <span className="absolute -right-1 -bottom-1 rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-semibold text-primary-foreground">
           {level}

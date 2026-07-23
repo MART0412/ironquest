@@ -5,6 +5,28 @@
 
 export type AvatarTierKey = "seedling" | "novice" | "warrior" | "champion"
 
+// Which base-figure set the layered avatar draws. A free presentation choice,
+// kept separate from profiles.sex (which drives the BMR calc).
+export type AvatarCharacter = "man" | "woman"
+
+/**
+ * Resolve the figure to render: an explicit avatar choice wins; otherwise
+ * derive from the onboarding sex (male→man, female→woman); default "man".
+ * Keeps existing users sensible with no backfill, and never couples the
+ * avatar to nutrition targets.
+ */
+export function resolveCharacter(
+  sex: string | null | undefined,
+  avatarCharacter: string | null | undefined
+): AvatarCharacter {
+  if (avatarCharacter === "man" || avatarCharacter === "woman") {
+    return avatarCharacter
+  }
+  if (sex === "female") return "woman"
+  if (sex === "male") return "man"
+  return "man"
+}
+
 export type AvatarTier = {
   key: AvatarTierKey
   label: string

@@ -3,9 +3,11 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 
 import { Avatar } from "@/components/profile/avatar"
+import { CharacterPicker } from "@/components/profile/character-picker"
 import { StatRadar } from "@/components/profile/stat-radar"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { resolveCharacter } from "@/lib/game/avatar"
 import { levelFromXp } from "@/lib/game/level"
 import { multiplierFor } from "@/lib/game/streak"
 import { BRANCH_ORDER, type BranchKey } from "@/lib/game/skill-tree"
@@ -29,7 +31,11 @@ export default async function ProfilePage() {
     { data: equipped },
     { data: streak },
   ] = await Promise.all([
-    supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("display_name, sex, avatar_character")
+      .eq("id", user.id)
+      .maybeSingle(),
     supabase.from("xp_ledger").select("xp"),
     supabase.from("exercises").select("id, branch, tier").not("unlock_criteria", "is", null),
     supabase.from("skill_unlocks").select("exercise_id"),
@@ -48,6 +54,7 @@ export default async function ProfilePage() {
   const { level } = levelFromXp(totalXp)
   const streakLen = streak?.current_len ?? 0
   const bestLen = streak?.best_len ?? 0
+  const character = resolveCharacter(profile?.sex, profile?.avatar_character)
 
   // Equipped cosmetics → title text, theme accent, gear slots.
   let equippedTitle: string | null = null
@@ -101,7 +108,7 @@ export default async function ProfilePage() {
           ← Home
         </Link>
         <div className="flex size-32 items-center justify-center overflow-hidden rounded-full bg-muted">
-          <Avatar level={level} gearSlots={gearSlots} className="h-full w-auto" />
+          <Avatar level={level} character={character} gearSlots={gearSlots} className="h-full w-auto" />
         </div>
         <div>
           <h1 className="font-heading text-2xl font-semibold">
@@ -134,6 +141,15 @@ export default async function ProfilePage() {
         </CardHeader>
         <CardContent>
           <StatRadar stats={stats} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Character</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CharacterPicker current={character} level={level} />
         </CardContent>
       </Card>
 

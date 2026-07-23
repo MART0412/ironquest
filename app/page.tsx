@@ -7,6 +7,7 @@ import { QuestCard, type QuestRoutine } from "@/components/home/quest-card"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { signOut } from "@/lib/actions/auth"
+import { resolveCharacter } from "@/lib/game/avatar"
 import { multiplierFor, mxDateOf, weekdayOf } from "@/lib/game/streak"
 import { createClient } from "@/lib/supabase/server"
 
@@ -92,6 +93,7 @@ export default async function Home() {
       <CharacterHeader
         displayName={profile.display_name ?? "Hero"}
         totalXp={totalXp}
+        character={resolveCharacter(profile.sex, profile.avatar_character)}
       />
 
       {/* Streak / points / phase chips */}
