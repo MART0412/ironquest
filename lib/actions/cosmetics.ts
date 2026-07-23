@@ -61,7 +61,11 @@ export async function equipCosmetic(id: string): Promise<ActionError | { ok: tru
     .maybeSingle()
   if (!cosmetic) return { error: "That item no longer exists." }
 
-  if (cosmetic.type === "title" || cosmetic.type === "theme") {
+  if (
+    cosmetic.type === "title" ||
+    cosmetic.type === "theme" ||
+    cosmetic.type === "ui_theme"
+  ) {
     // Clear other equipped items of the same single-active type.
     const { data: sameType } = await supabase
       .from("cosmetic_equipped")

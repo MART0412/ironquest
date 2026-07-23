@@ -5,7 +5,11 @@ import { type RewardRow } from "@/components/store/rewards-tab"
 import { StoreTabs } from "@/components/store/store-tabs"
 import { createClient } from "@/lib/supabase/server"
 
-type CosmeticMeta = { accent?: string; slot?: string }
+type CosmeticMeta = {
+  accent?: string
+  slot?: string
+  vars?: Record<string, string>
+}
 
 export default async function StorePage() {
   const supabase = await createClient()
@@ -50,6 +54,15 @@ export default async function StorePage() {
   const equippedIds = new Set((equipped ?? []).map((e) => e.cosmetic_id))
   const cosmeticRows: CosmeticRow[] = (cosmetics ?? []).map((c) => {
     const meta = (c.metadata ?? {}) as CosmeticMeta
+    const v = meta.vars ?? {}
+    const preview =
+      c.type === "ui_theme"
+        ? {
+            bg: v["--background"] ?? "oklch(1 0 0)",
+            primary: v["--primary"] ?? "oklch(0.2 0 0)",
+            accent: v["--accent"] ?? v["--primary"] ?? "oklch(0.5 0 0)",
+          }
+        : null
     return {
       id: c.id,
       slug: c.slug,
@@ -58,6 +71,7 @@ export default async function StorePage() {
       costPoints: c.cost_points,
       accent: meta.accent ?? null,
       slot: meta.slot ?? null,
+      preview,
       owned: ownedIds.has(c.id),
       equipped: equippedIds.has(c.id),
     }

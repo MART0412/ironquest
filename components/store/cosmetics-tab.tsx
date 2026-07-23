@@ -17,17 +17,20 @@ export type CosmeticRow = {
   id: string
   slug: string
   name: string
-  type: "title" | "theme" | "gear"
+  type: "title" | "theme" | "gear" | "ui_theme"
   costPoints: number
   accent: string | null
   slot: string | null
+  /** ui_theme preview colors (from metadata.vars). */
+  preview: { bg: string; primary: string; accent: string } | null
   owned: boolean
   equipped: boolean
 }
 
 const GROUPS: { type: CosmeticRow["type"]; label: string; blurb: string }[] = [
+  { type: "ui_theme", label: "App themes", blurb: "One active — reskins the whole app." },
   { type: "title", label: "Titles", blurb: "One active — shown under your name." },
-  { type: "theme", label: "Themes", blurb: "One active — recolors your profile." },
+  { type: "theme", label: "Profile accents", blurb: "One active — recolors your profile." },
   { type: "gear", label: "Gear", blurb: "Stacks — layers onto your avatar." },
 ]
 
@@ -129,8 +132,20 @@ export function CosmeticsTab({
   )
 }
 
-/** A small preview: theme = accent dot, gear = avatar layer, title = initial. */
+/** Preview: ui_theme = palette chip, theme = accent dot, gear = avatar, title = initial. */
 function CosmeticSwatch({ cosmetic }: { cosmetic: CosmeticRow }) {
+  if (cosmetic.type === "ui_theme" && cosmetic.preview) {
+    return (
+      <span
+        className="flex size-9 shrink-0 items-center justify-center gap-0.5 rounded-lg border border-border p-1"
+        style={{ backgroundColor: cosmetic.preview.bg }}
+        aria-hidden
+      >
+        <span className="h-4 w-1.5 rounded-sm" style={{ backgroundColor: cosmetic.preview.primary }} />
+        <span className="h-4 w-1.5 rounded-sm" style={{ backgroundColor: cosmetic.preview.accent }} />
+      </span>
+    )
+  }
   if (cosmetic.type === "theme" && cosmetic.accent) {
     return (
       <span
