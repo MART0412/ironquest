@@ -21,8 +21,14 @@ export type CosmeticRow = {
   costPoints: number
   accent: string | null
   slot: string | null
-  /** ui_theme preview colors (from metadata.vars). */
-  preview: { bg: string; primary: string; accent: string } | null
+  /** ui_theme preview (from metadata.vars + optional background layer). */
+  preview: {
+    bg: string
+    primary: string
+    accent: string
+    background: string | null
+    backgroundSize: string | null
+  } | null
   owned: boolean
   equipped: boolean
 }
@@ -137,8 +143,17 @@ function CosmeticSwatch({ cosmetic }: { cosmetic: CosmeticRow }) {
   if (cosmetic.type === "ui_theme" && cosmetic.preview) {
     return (
       <span
-        className="flex size-9 shrink-0 items-center justify-center gap-0.5 rounded-lg border border-border p-1"
-        style={{ backgroundColor: cosmetic.preview.bg }}
+        className="flex size-9 shrink-0 items-center justify-center gap-0.5 overflow-hidden rounded-lg border border-border p-1"
+        style={{
+          backgroundColor: cosmetic.preview.bg,
+          // Show the theme's own background layer in the chip when it has one.
+          ...(cosmetic.preview.background
+            ? {
+                backgroundImage: cosmetic.preview.background,
+                backgroundSize: cosmetic.preview.backgroundSize ?? undefined,
+              }
+            : {}),
+        }}
         aria-hidden
       >
         <span className="h-4 w-1.5 rounded-sm" style={{ backgroundColor: cosmetic.preview.primary }} />

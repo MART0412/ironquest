@@ -2,12 +2,15 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-import { themeStyleFromVars } from "@/lib/game/theme";
+import { backgroundStyleFrom, themeStyleFromVars } from "@/lib/game/theme";
 import { createClient } from "@/lib/supabase/server";
 
 type ThemeMeta = { vars?: unknown };
 
-/** The caller's equipped app-wide art-style theme, as inline CSS-var overrides. */
+/**
+ * The caller's equipped app-wide art-style theme: CSS-var token overrides plus
+ * an optional CSS-only background layer.
+ */
 async function equippedThemeStyle() {
   const supabase = await createClient();
   const {
@@ -22,7 +25,7 @@ async function equippedThemeStyle() {
     .maybeSingle();
 
   const meta = (data?.cosmetics?.metadata ?? null) as ThemeMeta | null;
-  return themeStyleFromVars(meta?.vars);
+  return { ...themeStyleFromVars(meta?.vars), ...backgroundStyleFrom(meta) };
 }
 
 const geistSans = Geist({

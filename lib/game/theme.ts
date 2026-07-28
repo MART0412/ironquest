@@ -34,6 +34,36 @@ const ALLOWED = new Set<string>(THEME_TOKEN_ALLOWLIST)
  * keeping only allowlisted token names with string values. Returns {} for
  * missing/empty input (→ app defaults).
  */
+/**
+ * Optional background layer for a theme (`metadata.background`), applied
+ * alongside the token overrides. CSS-only by contract: any `url(...)` is
+ * rejected, so a theme can never pull in an external asset.
+ */
+export function backgroundStyleFrom(metadata: unknown): CSSProperties {
+  if (!metadata || typeof metadata !== "object") return {}
+  const meta = metadata as Record<string, unknown>
+
+  const background = meta.background
+  if (typeof background !== "string" || background.length === 0) return {}
+  if (hasExternalRef(background)) return {}
+
+  const style: Record<string, string> = {
+    backgroundImage: background,
+    backgroundAttachment: "fixed",
+  }
+
+  const size = meta.backgroundSize
+  if (typeof size === "string" && size.length > 0 && !hasExternalRef(size)) {
+    style.backgroundSize = size
+  }
+
+  return style as CSSProperties
+}
+
+function hasExternalRef(value: string): boolean {
+  return /url\s*\(|@import/i.test(value)
+}
+
 export function themeStyleFromVars(vars: unknown): CSSProperties {
   if (!vars || typeof vars !== "object") return {}
   const style: Record<string, string> = {}
