@@ -483,6 +483,74 @@ export type Database = {
         }
         Relationships: []
       }
+      skill_path_nodes: {
+        Row: {
+          exercise_id: string
+          path_id: string
+          position: number
+        }
+        Insert: {
+          exercise_id: string
+          path_id: string
+          position: number
+        }
+        Update: {
+          exercise_id?: string
+          path_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_path_nodes_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_path_nodes_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "skill_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skill_paths: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          name: string
+          signature_exercise_id: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          name: string
+          signature_exercise_id: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+          signature_exercise_id?: string
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_paths_signature_exercise_id_fkey"
+            columns: ["signature_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       skill_unlocks: {
         Row: {
           evidence_workout_id: string | null
