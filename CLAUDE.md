@@ -31,7 +31,7 @@ Gamified calisthenics + nutrition PWA. Full product spec lives in `docs/spec.md`
 
 ## Phase status
 - **Phase 1 — Core loop: ✅ complete.** Auth + onboarding (TDEE/targets/split), full schema + RLS, routine builder + 3 template splits, workout check-off + XP/streak engine, home/character sheet, manual food logging + My Foods.
-- **Phase 2 — Game layer: ✅ complete (verified 2026-07-22).** Skill-unlock + PR engine, skill tree UI + stat radar + full-screen unlock celebration, points store (real-life rewards, atomic redeem), cosmetics tab + layered avatar. Deferred to the docs/notes.md backlog: app-wide art-style themes (B1), man/woman character selection (B2-base).
+- **Phase 2 — Game layer: ✅ complete (verified 2026-07-28).** Skill-unlock + PR engine; skill tree UI (left→right per-branch progression, no pan/zoom) + stat radar + full-screen unlock celebration; points store (real-life rewards, atomic redeem) + cosmetics tab; layered avatar with man/woman character selection (onboarding step + profile setting, data-driven figure registry); five app-wide art-style themes with optional CSS-only background layers. Backlog B1/B2-base are **done** — what remains is Phase 4 (B2-evolution, B3).
 - **Current phase: 3 — Intelligence.** Slices in order:
   1. AI meal macro estimation (Claude API — CLAUDE.md pins claude-sonnet-4-6; confirm/refresh the model at build time)
   2. Meal compensation feature (strict/neutral, comp quests)
