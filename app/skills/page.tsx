@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 
 import { SkillTreeView, type BestPerf } from "@/components/skills/skill-tree-view"
-import { buildTree, type ExerciseNode } from "@/lib/game/skill-tree"
+import { buildBranchTracks, type ExerciseNode } from "@/lib/game/skill-tree"
 import type { UnlockCriteria } from "@/lib/game/skills"
 import { createClient } from "@/lib/supabase/server"
 
@@ -47,17 +47,9 @@ export default async function SkillsPage() {
     demo_notes: e.demo_notes,
   }))
 
-  const { nodes, edges, width, height } = buildTree(treeExercises, unlocks ?? [])
+  const tracks = buildBranchTracks(treeExercises, unlocks ?? [])
 
-  return (
-    <SkillTreeView
-      nodes={nodes}
-      edges={edges}
-      width={width}
-      height={height}
-      bestByExercise={bestByExercise}
-    />
-  )
+  return <SkillTreeView tracks={tracks} bestByExercise={bestByExercise} />
 }
 
 function maxNullable(a: number | null, b: number | null): number | null {

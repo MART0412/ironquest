@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest"
 
 import { computeStats, STAT_CONFIG } from "./stats"
 import {
-  buildTree,
+  buildBranchTracks,
   nodeState,
+  validateBranchNodes,
   type BranchKey,
   type ExerciseNode,
 } from "./skill-tree"
@@ -16,6 +17,9 @@ function pushChain(): ExerciseNode[] {
     { id: "p3", slug: "pushup", name: "Push-Up", branch: "push", tier: 3, unlock_criteria: null, demo_notes: null },
   ]
 }
+
+const track = (exercises: ExerciseNode[], unlocks: { exercise_id: string; unlocked_at: string }[] = []) =>
+  buildBranchTracks(exercises, unlocks).find((t) => t.key === "push")!
 
 describe("nodeState (frontier / gating)", () => {
   const chain = pushChain().map((n) => ({ id: n.id, tier: n.tier }))
@@ -44,25 +48,124 @@ describe("nodeState (frontier / gating)", () => {
   })
 })
 
-describe("buildTree", () => {
-  it("positions nodes by branch column and tier row, with tier→tier edges", () => {
-    const { nodes, edges } = buildTree(pushChain(), [
-      { exercise_id: "p1", unlocked_at: "2026-07-13T00:00:00Z" },
-    ])
+describe("buildBranchTracks — left→right progression", () => {
+  it("orders nodes strictly ascending by tier with strictly increasing x", () => {
+    const t = track(pushChain())
+    expect(t.nodes.map((n) => n.tier)).toEqual([1, 2, 3])
+    for (let i = 1; i < t.nodes.length; i++) {
+      expect(t.nodes[i].tier).toBeGreaterThan(t.nodes[i - 1].tier)
+      expect(t.nodes[i].x).toBeGreaterThan(t.nodes[i - 1].x)
+    }
+  })
 
-    const p1 = nodes.find((n) => n.id === "p1")!
-    const p2 = nodes.find((n) => n.id === "p2")!
-    expect(p1.state).toBe("unlocked")
-    expect(p1.unlockedAt).toBe("2026-07-13T00:00:00Z")
-    expect(p2.state).toBe("next")
-    expect(p2.prerequisiteName).toBe("Wall Push-Up")
-    expect(p2.y).toBeGreaterThan(p1.y) // deeper tier sits lower
-    expect(p1.x).toBe(p2.x) // same branch column
+  it("puts the easiest node at the far left and the hardest at the far right", () => {
+    const t = track(pushChain())
+    const xs = t.nodes.map((n) => n.x)
+    expect(t.nodes[0].tier).toBe(1)
+    expect(t.nodes[0].x).toBe(Math.min(...xs))
+    expect(t.nodes[t.nodes.length - 1].tier).toBe(3)
+    expect(t.nodes[t.nodes.length - 1].x).toBe(Math.max(...xs))
+  })
 
-    expect(edges).toEqual([
+  it("sorts unsorted input rather than trusting query order", () => {
+    const shuffled = [pushChain()[2], pushChain()[0], pushChain()[1]]
+    const t = track(shuffled)
+    expect(t.nodes.map((n) => n.slug)).toEqual(["wall", "incline", "pushup"])
+  })
+
+  it("lays every branch on a single row (vertical stacking is per-branch)", () => {
+    const t = track(pushChain())
+    expect(new Set(t.nodes.map((n) => n.y)).size).toBe(1)
+  })
+
+  it("carries state, prerequisite and unlock date", () => {
+    const t = track(pushChain(), [{ exercise_id: "p1", unlocked_at: "2026-07-13T00:00:00Z" }])
+    expect(t.nodes[0].state).toBe("unlocked")
+    expect(t.nodes[0].unlockedAt).toBe("2026-07-13T00:00:00Z")
+    expect(t.nodes[1].state).toBe("next")
+    expect(t.nodes[1].prerequisiteName).toBe("Wall Push-Up")
+    expect(t.unlockedCount).toBe(1)
+    expect(t.total).toBe(3)
+  })
+
+  it("connects consecutive tiers only", () => {
+    const t = track(pushChain())
+    expect(t.edges).toEqual([
       { from: "p1", to: "p2", branch: "push" },
       { from: "p2", to: "p3", branch: "push" },
     ])
+  })
+
+  it("renders each exercise exactly once even if the input repeats it", () => {
+    const dupInput = [...pushChain(), pushChain()[0]] // wall push-up twice
+    const t = buildBranchTracks(dupInput, [], { strict: false }).find(
+      (x) => x.key === "push"
+    )!
+    expect(t.nodes.filter((n) => n.slug === "wall").length).toBe(1)
+    expect(t.nodes.length).toBe(3)
+    expect(t.nodes.map((n) => n.tier)).toEqual([1, 2, 3])
+    expect(validateBranchNodes(t.nodes).ok).toBe(true)
+  })
+
+  it("fails loudly on duplicated seed data when strict", () => {
+    const dupInput = [...pushChain(), pushChain()[0]]
+    expect(() => buildBranchTracks(dupInput, [], { strict: true })).toThrow(
+      /uniqueness invariant/
+    )
+  })
+
+  it("does not throw on merely unsorted input (sorting is not a fault)", () => {
+    const shuffled = [pushChain()[2], pushChain()[0], pushChain()[1]]
+    expect(() => buildBranchTracks(shuffled, [], { strict: true })).not.toThrow()
+  })
+
+  it("builds one track per branch, in stacking order", () => {
+    const tracks = buildBranchTracks(pushChain(), [])
+    expect(tracks.map((t) => t.key)).toEqual(["push", "pull", "core", "legs", "static"])
+  })
+
+  it("every rendered branch satisfies the ordering invariant", () => {
+    for (const t of buildBranchTracks(pushChain(), [])) {
+      expect(validateBranchNodes(t.nodes).ok).toBe(true)
+    }
+  })
+})
+
+describe("validateBranchNodes", () => {
+  it("passes a clean strictly-ascending branch", () => {
+    expect(
+      validateBranchNodes([
+        { id: "a", tier: 1 },
+        { id: "b", tier: 2 },
+      ])
+    ).toMatchObject({ ok: true, duplicateIds: [], duplicateTiers: [], outOfOrder: false })
+  })
+
+  it("flags a duplicated node id", () => {
+    const v = validateBranchNodes([
+      { id: "a", tier: 1 },
+      { id: "a", tier: 2 },
+    ])
+    expect(v.ok).toBe(false)
+    expect(v.duplicateIds).toEqual(["a"])
+  })
+
+  it("flags a duplicated tier", () => {
+    const v = validateBranchNodes([
+      { id: "a", tier: 1 },
+      { id: "b", tier: 1 },
+    ])
+    expect(v.ok).toBe(false)
+    expect(v.duplicateTiers).toEqual([1])
+  })
+
+  it("flags out-of-order tiers", () => {
+    const v = validateBranchNodes([
+      { id: "a", tier: 3 },
+      { id: "b", tier: 2 },
+    ])
+    expect(v.ok).toBe(false)
+    expect(v.outOfOrder).toBe(true)
   })
 })
 
@@ -85,7 +188,6 @@ describe("computeStats (tunable weights)", () => {
     const low = computeStats({ ...empty, push: [1] }, maxTiers).STR
     const high = computeStats({ ...empty, push: [3] }, maxTiers).STR
     expect(high).toBeGreaterThan(low)
-    // tier weights 1+2+3 = 6; tier 3 alone = 3/6 = 0.5
     expect(high).toBeCloseTo(0.5)
     expect(low).toBeCloseTo(1 / 6)
   })
@@ -94,7 +196,7 @@ describe("computeStats (tunable weights)", () => {
     const flat = computeStats({ ...empty, push: [1] }, maxTiers, {
       tierWeight: () => 1,
     }).STR
-    expect(flat).toBeCloseTo(1 / 3) // 1 of 3 equal-weight tiers
+    expect(flat).toBeCloseTo(1 / 3)
   })
 
   it("clamps and handles empty branches without NaN", () => {
