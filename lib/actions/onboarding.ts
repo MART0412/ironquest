@@ -50,6 +50,7 @@ export async function completeOnboarding(
     .update({
       display_name: d.displayName,
       sex: d.sex,
+      avatar_character: d.avatarCharacter,
       dob: d.dob,
       height_cm: d.heightCm,
       weight_kg: d.weightKg,

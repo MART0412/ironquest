@@ -58,6 +58,10 @@ export const completeOnboardingSchema = onboardingProfileSchema
   .extend(targetsSchema.shape)
   .extend({
     splitKey: z.enum(SPLIT_KEYS, { error: "Choose a training split." }),
+    // Avatar presentation — independent of `sex`, which drives the BMR calc.
+    avatarCharacter: z.enum(["man", "woman"], {
+      error: "Choose your character.",
+    }),
   })
 
 export type OnboardingProfileInput = z.infer<typeof onboardingProfileSchema>

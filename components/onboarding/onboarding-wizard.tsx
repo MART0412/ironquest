@@ -16,10 +16,13 @@ import {
   type ActivityLevel,
   type Sex,
 } from "@/lib/fitness/tdee"
+import { Avatar } from "@/components/profile/avatar"
+import { resolveCharacter, type AvatarCharacter } from "@/lib/game/avatar"
 
 type WizardData = {
   displayName: string
   sex: Sex | ""
+  avatarCharacter: AvatarCharacter | ""
   dob: string
   heightCm: string
   weightKg: string
@@ -34,6 +37,7 @@ type WizardData = {
 const EMPTY: WizardData = {
   displayName: "",
   sex: "",
+  avatarCharacter: "",
   dob: "",
   heightCm: "",
   weightKg: "",
@@ -45,7 +49,19 @@ const EMPTY: WizardData = {
   splitKey: "",
 }
 
-const STEP_COUNT = 7
+// Step order lives in data, so inserting a step never means renumbering cases.
+const STEPS = [
+  "name",
+  "sex",
+  "character",
+  "dob",
+  "body",
+  "activity",
+  "targets",
+  "split",
+] as const
+type StepId = (typeof STEPS)[number]
+const STEP_COUNT = STEPS.length
 
 export function OnboardingWizard() {
   const [step, setStep] = useState(0)
@@ -56,33 +72,37 @@ export function OnboardingWizard() {
   const set = <K extends keyof WizardData>(key: K, value: WizardData[K]) =>
     setData((d) => ({ ...d, [key]: value }))
 
+  const stepId: StepId = STEPS[step]
+
   // Whether the current step has enough valid input to advance.
   const canAdvance = useMemo(() => {
-    switch (step) {
-      case 0:
+    switch (STEPS[step]) {
+      case "name":
         return data.displayName.trim().length >= 2
-      case 1:
+      case "sex":
         return data.sex !== ""
-      case 2: {
+      case "character":
+        return data.avatarCharacter !== ""
+      case "dob": {
         if (!data.dob) return false
         const age = ageFromDob(data.dob)
         return age >= 13 && age <= 120
       }
-      case 3: {
+      case "body": {
         const h = Number(data.heightCm)
         const w = Number(data.weightKg)
         return h >= 100 && h <= 250 && w >= 30 && w <= 300
       }
-      case 4:
+      case "activity":
         return data.activity !== ""
-      case 5:
+      case "targets":
         return (
           Number(data.calTarget) > 0 &&
           Number(data.proteinG) >= 0 &&
           Number(data.carbsG) >= 0 &&
           Number(data.fatG) >= 0
         )
-      case 6:
+      case "split":
         return data.splitKey !== ""
       default:
         return false
@@ -91,8 +111,8 @@ export function OnboardingWizard() {
 
   function goNext() {
     setError(null)
-    // Compute suggested targets when arriving at the review step.
-    if (step === 4 && data.sex && data.activity) {
+    // Compute suggested targets when leaving the activity step (targets is next).
+    if (stepId === "activity" && data.sex && data.activity) {
       const t = cutTargets({
         sex: data.sex,
         weightKg: Number(data.weightKg),
@@ -123,6 +143,8 @@ export function OnboardingWizard() {
       const result = await completeOnboarding({
         displayName: data.displayName.trim(),
         sex: data.sex as Sex,
+        avatarCharacter: (data.avatarCharacter ||
+          resolveCharacter(data.sex, null)) as AvatarCharacter,
         dob: data.dob,
         heightCm: Number(data.heightCm),
         weightKg: Number(data.weightKg),
@@ -151,7 +173,7 @@ export function OnboardingWizard() {
         </header>
 
         <div className="flex flex-1 flex-col">
-          {step === 0 && (
+          {stepId === "name" && (
             <Step title="What should we call you?" subtitle="Your hero's name.">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="displayName">Display name</Label>
@@ -167,7 +189,7 @@ export function OnboardingWizard() {
             </Step>
           )}
 
-          {step === 1 && (
+          {stepId === "sex" && (
             <Step
               title="Biological sex"
               subtitle="Used for the Mifflin-St Jeor metabolic formula."
@@ -178,14 +200,57 @@ export function OnboardingWizard() {
                     key={s}
                     selected={data.sex === s}
                     title={s === "male" ? "Male" : "Female"}
-                    onSelect={() => set("sex", s)}
+                    onSelect={() => {
+                      set("sex", s)
+                      // Pre-select the matching character; the next step can change it.
+                      set("avatarCharacter", resolveCharacter(s, null))
+                    }}
                   />
                 ))}
               </div>
             </Step>
           )}
 
-          {step === 2 && (
+          {stepId === "character" && (
+            <Step
+              title="Choose your character"
+              subtitle="Just how your avatar looks — it doesn't affect your targets."
+            >
+              <div className="grid grid-cols-2 gap-3">
+                {(["man", "woman"] as const).map((c) => {
+                  const selected = data.avatarCharacter === c
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      aria-label={c === "man" ? "Masculine figure" : "Feminine figure"}
+                      onClick={() => set("avatarCharacter", c)}
+                      className={
+                        "flex flex-col items-center gap-2 rounded-xl border p-4 transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 " +
+                        (selected
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted")
+                      }
+                    >
+                      <span className="flex h-24 w-16 items-center justify-center">
+                        <Avatar level={0} character={c} className="h-full w-auto" />
+                      </span>
+                      <span className="text-sm font-medium">
+                        {c === "man" ? "Masculine" : "Feminine"}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="mt-4 text-xs text-muted-foreground">
+                You can change this any time from your profile.
+              </p>
+            </Step>
+          )}
+
+          {stepId === "dob" && (
             <Step title="Date of birth" subtitle="Age refines your calorie needs.">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="dob">Date of birth</Label>
@@ -201,7 +266,7 @@ export function OnboardingWizard() {
             </Step>
           )}
 
-          {step === 3 && (
+          {stepId === "body" && (
             <Step title="Body metrics" subtitle="Metric units (cm, kg).">
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-2">
@@ -232,7 +297,7 @@ export function OnboardingWizard() {
             </Step>
           )}
 
-          {step === 4 && (
+          {stepId === "activity" && (
             <Step
               title="Activity level"
               subtitle="Your typical week, outside of IronQuest workouts."
@@ -251,7 +316,7 @@ export function OnboardingWizard() {
             </Step>
           )}
 
-          {step === 5 && (
+          {stepId === "targets" && (
             <Step
               title="Your Cut targets"
               subtitle="Calculated for a ~17% deficit and 2 g/kg protein. Tweak if you like."
@@ -292,7 +357,7 @@ export function OnboardingWizard() {
             </Step>
           )}
 
-          {step === 6 && (
+          {stepId === "split" && (
             <Step
               title="Choose your split"
               subtitle="Sets your training days and rest days. You can customise it later."

@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest"
 
-import { baseFigureForLevel, orderGear, resolveCharacter } from "./avatar"
+import {
+  AVATAR_TIERS,
+  baseFigureForLevel,
+  orderGear,
+  resolveCharacter,
+} from "./avatar"
+import {
+  BODY_VARIANTS,
+  FLOURISH_BY_TIER,
+  resolveBody,
+} from "@/components/profile/avatar-parts"
 
 describe("baseFigureForLevel (kept 0/5/10/20 thresholds)", () => {
   it("maps levels to the right tier", () => {
@@ -48,5 +58,35 @@ describe("resolveCharacter", () => {
     expect(resolveCharacter(null, null)).toBe("man")
     expect(resolveCharacter(undefined, undefined)).toBe("man")
     expect(resolveCharacter("other", "nonbinary")).toBe("man")
+  })
+})
+
+describe("figure registry (data-driven, Phase-4 ready)", () => {
+  it("has a body variant for every character", () => {
+    for (const c of ["man", "woman"] as const) {
+      expect(BODY_VARIANTS[c]).toBeDefined()
+      expect(resolveBody(c)).toBe(BODY_VARIANTS[c])
+    }
+  })
+
+  it("has a flourish for every avatar tier", () => {
+    for (const tier of AVATAR_TIERS) {
+      expect(FLOURISH_BY_TIER[tier.key]).toBeDefined()
+    }
+  })
+
+  it("resolves both characters across all tiers without gaps", () => {
+    for (const c of ["man", "woman"] as const) {
+      for (const level of [0, 5, 10, 20]) {
+        const tier = baseFigureForLevel(level)
+        expect(resolveBody(c)).toBeDefined()
+        expect(FLOURISH_BY_TIER[tier.key]).toBeDefined()
+      }
+    }
+  })
+
+  it("falls back to the base figure for an unknown discipline (Phase 4)", () => {
+    expect(resolveBody("woman", "running")).toBe(BODY_VARIANTS.woman)
+    expect(resolveBody("man", null)).toBe(BODY_VARIANTS.man)
   })
 })
