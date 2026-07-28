@@ -10,8 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { resolveCharacter } from "@/lib/game/avatar"
 import { levelFromXp } from "@/lib/game/level"
 import { multiplierFor } from "@/lib/game/streak"
-import { BRANCH_ORDER, type BranchKey } from "@/lib/game/skill-tree"
-import { computeStats } from "@/lib/game/stats"
+import { computePathStats } from "@/lib/game/stats"
 import { createClient } from "@/lib/supabase/server"
 
 type CosmeticMeta = { accent?: string; slot?: string }
@@ -26,7 +25,7 @@ export default async function ProfilePage() {
   const [
     { data: profile },
     { data: ledger },
-    { data: exercises },
+    { data: paths },
     { data: unlocks },
     { data: equipped },
     { data: streak },
@@ -37,7 +36,10 @@ export default async function ProfilePage() {
       .eq("id", user.id)
       .maybeSingle(),
     supabase.from("xp_ledger").select("xp"),
-    supabase.from("exercises").select("id, branch, tier").not("unlock_criteria", "is", null),
+    // Path membership drives the stat radar (spec §3.1/§3.2).
+    supabase
+      .from("skill_paths")
+      .select("slug, skill_path_nodes(exercise_id)"),
     supabase.from("skill_unlocks").select("exercise_id"),
     // Equipped cosmetics with their catalog metadata (title/theme/gear).
     supabase
@@ -69,26 +71,19 @@ export default async function ProfilePage() {
     else if (c.type === "gear" && meta.slot) gearSlots.push(meta.slot)
   }
 
-  const maxTierByBranch = emptyBranchMap(0)
-  const tierByExercise = new Map<string, { branch: BranchKey; tier: number }>()
-  for (const e of exercises ?? []) {
-    const branch = e.branch as BranchKey
-    if (!(branch in maxTierByBranch)) continue
-    tierByExercise.set(e.id, { branch, tier: e.tier })
-    if (e.tier > maxTierByBranch[branch]) maxTierByBranch[branch] = e.tier
+  // Per-path progress → the five stats. A shared node counts toward every path
+  // that contains it, which is exactly how the tree renders it.
+  const unlockedIds = new Set((unlocks ?? []).map((u) => u.exercise_id))
+  const progressByPath: Record<string, number> = {}
+  for (const path of paths ?? []) {
+    const nodeIds = (path.skill_path_nodes ?? []).map((n) => n.exercise_id)
+    if (nodeIds.length === 0) continue
+    const done = nodeIds.filter((id) => unlockedIds.has(id)).length
+    progressByPath[path.slug] = done / nodeIds.length
   }
+  const unlockedCount = unlockedIds.size
 
-  const unlockedTiersByBranch = emptyBranchMap<number[]>([])
-  for (const key of BRANCH_ORDER) unlockedTiersByBranch[key] = []
-  let unlockedCount = 0
-  for (const u of unlocks ?? []) {
-    const meta = tierByExercise.get(u.exercise_id)
-    if (!meta) continue
-    unlockedTiersByBranch[meta.branch].push(meta.tier)
-    unlockedCount++
-  }
-
-  const stats = computeStats(unlockedTiersByBranch, maxTierByBranch)
+  const stats = computePathStats(progressByPath)
 
   // An equipped theme overrides --primary for the whole page (radar, avatar accent, title).
   const themeStyle = themeAccent
@@ -165,12 +160,3 @@ export default async function ProfilePage() {
   )
 }
 
-function emptyBranchMap<T>(fill: T): Record<BranchKey, T> {
-  return {
-    push: fill,
-    pull: fill,
-    core: fill,
-    legs: fill,
-    static: fill,
-  }
-}

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 
 import { SkillTreeView, type BestPerf } from "@/components/skills/skill-tree-view"
-import { buildBranchTracks, type ExerciseNode } from "@/lib/game/skill-tree"
+import { buildPathTracks, type PathInput } from "@/lib/game/paths"
 import type { UnlockCriteria } from "@/lib/game/skills"
 import { createClient } from "@/lib/supabase/server"
 
@@ -12,14 +12,15 @@ export default async function SkillsPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
-  const [{ data: exercises }, { data: unlocks }, { data: workouts }] =
+  const [{ data: paths }, { data: unlocks }, { data: workouts }] =
     await Promise.all([
+      // Paths with their ordered nodes (public read-only library).
       supabase
-        .from("exercises")
-        .select("id, slug, name, branch, tier, unlock_criteria, demo_notes")
-        .not("unlock_criteria", "is", null)
-        .order("branch")
-        .order("tier"),
+        .from("skill_paths")
+        .select(
+          "slug, name, display_order, signature_exercise_id, skill_path_nodes(position, exercises(id, slug, name, unlock_criteria, demo_notes))"
+        )
+        .order("display_order"),
       supabase.from("skill_unlocks").select("exercise_id, unlocked_at"),
       // RLS scopes workouts (and thus embedded sets) to the caller.
       supabase.from("workouts").select("workout_sets(exercise_id, reps, seconds)"),
@@ -37,17 +38,25 @@ export default async function SkillsPage() {
     }
   }
 
-  const treeExercises: ExerciseNode[] = (exercises ?? []).map((e) => ({
-    id: e.id,
-    slug: e.slug ?? e.id,
-    name: e.name,
-    branch: e.branch as ExerciseNode["branch"],
-    tier: e.tier,
-    unlock_criteria: e.unlock_criteria as UnlockCriteria | null,
-    demo_notes: e.demo_notes,
+  const pathInputs: PathInput[] = (paths ?? []).map((p) => ({
+    slug: p.slug,
+    name: p.name,
+    signatureExerciseId: p.signature_exercise_id,
+    nodes: (p.skill_path_nodes ?? [])
+      .filter((n) => n.exercises !== null)
+      .map((n) => ({
+        position: n.position,
+        exercise: {
+          id: n.exercises!.id,
+          slug: n.exercises!.slug ?? n.exercises!.id,
+          name: n.exercises!.name,
+          unlock_criteria: n.exercises!.unlock_criteria as UnlockCriteria | null,
+          demo_notes: n.exercises!.demo_notes,
+        },
+      })),
   }))
 
-  const tracks = buildBranchTracks(treeExercises, unlocks ?? [])
+  const tracks = buildPathTracks(pathInputs, unlocks ?? [])
 
   return <SkillTreeView tracks={tracks} bestByExercise={bestByExercise} />
 }

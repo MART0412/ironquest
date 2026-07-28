@@ -4,7 +4,7 @@ import { X } from "lucide-react"
 
 import type { BestPerf } from "@/components/skills/skill-tree-view"
 import { Button } from "@/components/ui/button"
-import type { PositionedNode } from "@/lib/game/skill-tree"
+import type { PathNode } from "@/lib/game/paths"
 import { MX_TZ } from "@/lib/game/streak"
 import { cn } from "@/lib/utils"
 
@@ -15,7 +15,7 @@ const dateFmt = new Intl.DateTimeFormat("en", {
   day: "numeric",
 })
 
-const STATE_LABEL: Record<PositionedNode["state"], string> = {
+const STATE_LABEL: Record<PathNode["state"], string> = {
   unlocked: "Unlocked",
   next: "Up next",
   locked: "Locked",
@@ -26,7 +26,7 @@ export function NodeDetailSheet({
   best,
   onClose,
 }: {
-  node: PositionedNode | null
+  node: PathNode | null
   best: BestPerf | undefined
   onClose: () => void
 }) {

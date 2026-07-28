@@ -19,7 +19,7 @@ Gamified calisthenics + nutrition PWA. Full product spec lives in `docs/spec.md`
 4. **Every logging flow must be completable in under 20 seconds.** If a feature adds taps to workout check-off or meal logging, flag it before building.
 5. **One vertical slice per session.** Don't scaffold ahead of the current slice. No placeholder pages for future phases.
 6. **XP/points mutations go through a single server-side function** (`xp_ledger` insert + derived updates). Never award XP from client code.
-7. **Phase discipline:** we are in **Phase 3 (intelligence)** as of 2026-07-22 (Phases 1 & 2 complete — see phase status below). Do not implement Phase 4 work (training paths / multiclassing, body evolution) until its phase.
+7. **Phase discipline:** we are in **Phase 3 (intelligence)** as of 2026-07-22 (Phases 1 & 2 complete — see phase status below). Do not implement Phase 4 work (disciplines / multiclassing, body evolution) until its phase.
 
 ## Conventions
 - Server actions for mutations; React Query for client cache where needed
@@ -37,7 +37,8 @@ Gamified calisthenics + nutrition PWA. Full product spec lives in `docs/spec.md`
   2. Meal compensation feature (strict/neutral, comp quests)
   3. Open Food Facts + barcode lookup
   4. Weekly check-in flow (weight + measurements + photos → `checkins`, Storage bucket)
-- **Phase 4 — Productization (later):** training paths / multiclassing (B3), body evolution by training style (B2-evolution). Schema note: a future `exercises` migration generalizes `branch` → `path + branch`.
+- **Phase 4 — Productization (later):** **disciplines** / multiclassing (B3 — calisthenics, gym/weights, running, cycling, yoga), body evolution by training style (B2-evolution). Schema note: a future `exercises` migration generalizes `branch` → `discipline + branch`.
+  - **Naming:** "**path**" now means a goal-skill line in the skill tree (Planche Path, Front Lever Path — `skill_paths` / `skill_path_nodes`, Session 12). Phase 4's cross-modality concept is a "**discipline**". Don't reuse "path" for it.
 
 ## Testing / verification
 - After each slice: `npm run build` must pass clean before considering it done

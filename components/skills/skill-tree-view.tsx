@@ -4,11 +4,7 @@ import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 
 import { NodeDetailSheet } from "@/components/skills/node-detail-sheet"
-import {
-  LAYOUT,
-  type BranchTrack,
-  type PositionedNode,
-} from "@/lib/game/skill-tree"
+import { PATH_LAYOUT, type PathNode, type PathTrack } from "@/lib/game/paths"
 import { cn } from "@/lib/utils"
 
 export type BestPerf = { reps: number | null; seconds: number | null }
@@ -17,10 +13,10 @@ export function SkillTreeView({
   tracks,
   bestByExercise,
 }: {
-  tracks: BranchTrack[]
+  tracks: PathTrack[]
   bestByExercise: Record<string, BestPerf>
 }) {
-  const [selected, setSelected] = useState<PositionedNode | null>(null)
+  const [selected, setSelected] = useState<PathNode | null>(null)
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col gap-6 px-6 py-8">
@@ -31,15 +27,15 @@ export function SkillTreeView({
         >
           ← Home
         </Link>
-        <h1 className="mt-1 font-heading text-2xl font-semibold">Skill tree</h1>
+        <h1 className="mt-1 font-heading text-2xl font-semibold">Skill paths</h1>
         <p className="text-xs text-muted-foreground">
-          Each branch runs left → right: further right is harder. Tap a node for
+          Each path runs left → right toward its signature skill. Tap a node for
           details.
         </p>
       </header>
 
       {tracks.map((track) => (
-        <BranchSection key={track.key} track={track} onSelect={setSelected} />
+        <PathSection key={track.key} track={track} onSelect={setSelected} />
       ))}
 
       <NodeDetailSheet
@@ -51,17 +47,17 @@ export function SkillTreeView({
   )
 }
 
-function BranchSection({
+function PathSection({
   track,
   onSelect,
 }: {
-  track: BranchTrack
-  onSelect: (node: PositionedNode) => void
+  track: PathTrack
+  onSelect: (node: PathNode) => void
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Open each branch where the user actually is: bring the frontier ("next")
-  // node into view, since a deep branch scrolls past the early tiers.
+  // Open each path where the user actually is: bring the frontier ("next")
+  // node into view, since a long path scrolls past the early nodes.
   useEffect(() => {
     const el = scrollRef.current
     const frontier = track.nodes.find((n) => n.state === "next")
@@ -69,18 +65,28 @@ function BranchSection({
     el.scrollLeft = Math.max(0, frontier.x - el.clientWidth / 2)
   }, [track])
 
+  const percent = Math.round(track.progress * 100)
+
   return (
-    <section aria-label={track.label} className="flex flex-col gap-1.5">
-      <div className="flex items-baseline justify-between">
-        <h2 className="font-heading text-lg font-medium">{track.label}</h2>
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {track.unlockedCount}/{track.total} unlocked
+    <section aria-label={track.name} className="flex flex-col gap-1.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 className="font-heading text-lg font-medium">{track.name}</h2>
+        <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+          {percent}% · {track.unlockedCount}/{track.total}
         </span>
+      </div>
+
+      {/* Progress bar mirrors the % so scanning the page reads as a ladder. */}
+      <div className="h-1 overflow-hidden rounded-full bg-muted" aria-hidden>
+        <div
+          className="h-full rounded-full bg-primary transition-[width]"
+          style={{ width: `${percent}%` }}
+        />
       </div>
 
       <div
         ref={scrollRef}
-        data-branch={track.key}
+        data-path={track.key}
         className="overflow-x-auto overscroll-x-contain rounded-xl border border-border bg-muted/20"
       >
         <svg
@@ -90,20 +96,19 @@ function BranchSection({
           className="block"
           style={{ width: track.width, height: track.height }}
           role="group"
-          aria-label={`${track.label} progression`}
+          aria-label={`${track.name} progression`}
         >
           {track.edges.map((edge) => {
             const from = track.nodes.find((n) => n.id === edge.from)
             const to = track.nodes.find((n) => n.id === edge.to)
             if (!from || !to) return null
-            // Lit once the right-hand (harder) node is earned.
             const lit = to.state === "unlocked"
             return (
               <line
                 key={`${edge.from}-${edge.to}`}
-                x1={from.x + LAYOUT.nodeRadius}
+                x1={from.x + from.radius}
                 y1={from.y}
-                x2={to.x - LAYOUT.nodeRadius}
+                x2={to.x - to.radius}
                 y2={to.y}
                 strokeWidth={2}
                 className={lit ? "stroke-primary" : "stroke-border"}
@@ -124,10 +129,10 @@ function TreeNode({
   node,
   onSelect,
 }: {
-  node: PositionedNode
-  onSelect: (node: PositionedNode) => void
+  node: PathNode
+  onSelect: (node: PathNode) => void
 }) {
-  const r = LAYOUT.nodeRadius
+  const r = node.radius
   const unlocked = node.state === "unlocked"
   const next = node.state === "next"
   const lines = wrapLabel(node.name)
@@ -137,10 +142,12 @@ function TreeNode({
       transform={`translate(${node.x} ${node.y})`}
       role="button"
       tabIndex={0}
-      aria-label={`${node.name} — ${node.state}`}
+      aria-label={`${node.name} — ${node.state}${node.isCapstone ? ", signature skill" : ""}${node.pathCount > 1 ? `, in ${node.pathCount} paths` : ""}`}
       data-slug={node.slug}
       data-state={node.state}
-      data-tier={node.tier}
+      data-position={node.position}
+      data-capstone={node.isCapstone ? "true" : "false"}
+      data-path-count={node.pathCount}
       style={{ cursor: "pointer" }}
       onClick={() => onSelect(node)}
       onKeyDown={(e) => {
@@ -150,6 +157,17 @@ function TreeNode({
         }
       }}
     >
+      {/* Capstone gets an outer ring so the goal reads at a glance. */}
+      {node.isCapstone && (
+        <circle
+          r={r + 5}
+          fill="none"
+          className={unlocked ? "stroke-primary" : "stroke-border"}
+          strokeWidth={1.5}
+          opacity={unlocked ? 0.9 : 0.5}
+        />
+      )}
+
       <circle
         r={r}
         style={{ fill: unlocked ? node.accent : "var(--card)" }}
@@ -157,7 +175,7 @@ function TreeNode({
           "transition-colors",
           unlocked || next ? "stroke-primary" : "stroke-border"
         )}
-        strokeWidth={next ? 3 : 2}
+        strokeWidth={next ? 3 : node.isCapstone ? 2.5 : 2}
         strokeDasharray={next ? "5 4" : undefined}
         opacity={node.state === "locked" ? 0.5 : 1}
       />
@@ -184,10 +202,27 @@ function TreeNode({
         <text
           y={5}
           textAnchor="middle"
-          className="fill-muted-foreground text-[12px]"
+          className={cn(
+            "fill-muted-foreground",
+            node.isCapstone ? "text-[15px]" : "text-[12px]"
+          )}
         >
-          {node.tier}
+          {node.isCapstone ? "★" : node.position}
         </text>
+      )}
+
+      {/* Shared-node badge: this exercise feeds more than one path. */}
+      {node.pathCount > 1 && (
+        <g transform={`translate(${r - 4} ${-r - 2})`}>
+          <circle r={9} className="fill-secondary stroke-border" strokeWidth={1} />
+          <text
+            y={3}
+            textAnchor="middle"
+            className="fill-secondary-foreground text-[9px] font-semibold"
+          >
+            {node.pathCount}
+          </text>
+        </g>
       )}
 
       {lines.map((line, i) => (
@@ -197,6 +232,7 @@ function TreeNode({
           textAnchor="middle"
           className={cn(
             "text-[10px]",
+            node.isCapstone && "font-semibold",
             node.state === "locked" ? "fill-muted-foreground" : "fill-foreground"
           )}
         >
