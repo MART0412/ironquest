@@ -1,55 +1,48 @@
-// RPG stat radar computation (spec §3.1, §3.2). Five stats driven by how far
-// the user has climbed each branch. Weights are isolated here so they're tunable
-// without touching the renderer or query code.
+// RPG stat radar computation (spec §3.1, §3.2). The five stats are now driven
+// by GOAL-PATH progress rather than muscle-group branch tiers: each path
+// contributes to one or two stats with tunable weights (PATH_STAT_WEIGHTS in
+// lib/game/paths.ts), so chasing the Planche lifts STR/CORE while chasing the
+// Pistol lifts LEGS.
 
-import { BRANCH_CONFIG, type BranchKey, type StatKey } from "./skill-tree"
+import { PATH_STAT_WEIGHTS } from "./paths"
+import type { StatKey } from "./skill-tree"
 
 export const STAT_KEYS: StatKey[] = ["STR", "PULL", "CORE", "LEGS", "BALANCE"]
 
-export type StatConfig = {
-  /** Weight earned for unlocking the node at a given tier (deeper = worth more). */
-  tierWeight: (tier: number) => number
-}
-
-export const STAT_CONFIG: StatConfig = {
-  // Linear: tier 1 worth 1, tier 5 worth 5. Deeper progressions dominate the
-  // stat, so a lit branch tip reads as real mastery. Swap this fn to retune.
-  tierWeight: (tier) => tier,
-}
-
-/** Sum of tierWeight(1..maxTier) — the fully-unlocked branch total. */
-function branchMaxScore(maxTier: number, config: StatConfig): number {
-  let total = 0
-  for (let t = 1; t <= maxTier; t++) total += config.tierWeight(t)
-  return total
-}
-
 /**
- * Per-branch 0..1 progress → mapped onto the five stats. Each stat is the
- * weighted unlocked score over the branch's max possible score.
+ * Weighted average of path progress per stat:
+ *   stat = Σ(progress_path × weight_path,stat) / Σ(weight_path,stat)
+ *
+ * A stat with no contributing paths is 0 (never NaN). Progress values are
+ * clamped to 0..1, so the result is always a valid radar magnitude.
  */
-export function computeStats(
-  unlockedTiersByBranch: Record<BranchKey, number[]>,
-  maxTierByBranch: Record<BranchKey, number>,
-  config: StatConfig = STAT_CONFIG
+export function computePathStats(
+  progressByPath: Record<string, number>,
+  weights: Record<string, Partial<Record<StatKey, number>>> = PATH_STAT_WEIGHTS
 ): Record<StatKey, number> {
-  const result = {} as Record<StatKey, number>
-  for (const stat of STAT_KEYS) result[stat] = 0
-
-  for (const branch of Object.keys(BRANCH_CONFIG) as BranchKey[]) {
-    const stat = BRANCH_CONFIG[branch].stat
-    const maxTier = maxTierByBranch[branch] ?? 0
-    const max = branchMaxScore(maxTier, config)
-    if (max === 0) {
-      result[stat] = 0
-      continue
-    }
-    const earned = (unlockedTiersByBranch[branch] ?? []).reduce(
-      (sum, tier) => sum + config.tierWeight(tier),
-      0
-    )
-    result[stat] = Math.min(1, earned / max)
+  const totals = {} as Record<StatKey, number>
+  const divisors = {} as Record<StatKey, number>
+  for (const stat of STAT_KEYS) {
+    totals[stat] = 0
+    divisors[stat] = 0
   }
 
+  for (const [pathSlug, statWeights] of Object.entries(weights)) {
+    const raw = progressByPath[pathSlug] ?? 0
+    const progress = Math.min(1, Math.max(0, raw))
+    for (const [stat, weight] of Object.entries(statWeights) as [
+      StatKey,
+      number,
+    ][]) {
+      if (!weight) continue
+      totals[stat] += progress * weight
+      divisors[stat] += weight
+    }
+  }
+
+  const result = {} as Record<StatKey, number>
+  for (const stat of STAT_KEYS) {
+    result[stat] = divisors[stat] > 0 ? totals[stat] / divisors[stat] : 0
+  }
   return result
 }
