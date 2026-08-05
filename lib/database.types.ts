@@ -483,6 +483,51 @@ export type Database = {
         }
         Relationships: []
       }
+      skill_challenges: {
+        Row: {
+          attempts: number
+          exercise_id: string
+          offered_at: string
+          offered_workout_id: string | null
+          resolved_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          exercise_id: string
+          offered_at?: string
+          offered_workout_id?: string | null
+          resolved_at?: string | null
+          status: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          exercise_id?: string
+          offered_at?: string
+          offered_workout_id?: string | null
+          resolved_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_challenges_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_challenges_offered_workout_id_fkey"
+            columns: ["offered_workout_id"]
+            isOneToOne: false
+            referencedRelation: "workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       skill_path_nodes: {
         Row: {
           exercise_id: string
@@ -732,10 +777,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      attempt_challenge: {
+        Args: { p_exercise_id: string; p_fast_track?: boolean; p_sets?: Json }
+        Returns: Json
+      }
+      award_skill_unlock: {
+        Args: {
+          p_action: string
+          p_exercise: string
+          p_points: number
+          p_today: string
+          p_user: string
+          p_workout: string
+          p_xp: number
+        }
+        Returns: Json
+      }
       complete_workout: {
         Args: { p_routine_id?: string; p_sets?: Json }
         Returns: Json
       }
+      decline_challenge: { Args: { p_exercise_id: string }; Returns: undefined }
       evaluate_streak_and_award: {
         Args: {
           p_ref_id?: string

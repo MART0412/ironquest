@@ -5,13 +5,19 @@ import Link from "next/link"
 import { useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 
+import { ChallengePanel } from "@/components/skills/challenge-panel"
+import {
+  UnlockCelebration,
+  type UnlockEntry,
+} from "@/components/skills/unlock-celebration"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { Stepper } from "@/components/workout/stepper"
+import { declineChallenge, type ChallengeOffer } from "@/lib/actions/challenges"
 import {
   completeWorkout,
   type CompleteWorkoutResult,
 } from "@/lib/actions/workouts"
 import type { Weekday } from "@/lib/data/splits"
-import { SKILL_UNLOCK_XP } from "@/lib/game/skills"
 import { cn } from "@/lib/utils"
 
 type CheckoffItem = {
@@ -58,9 +64,12 @@ export function WorkoutCheckoff({
   const [checked, setChecked] = useState<Checked>({})
   const [adjusting, setAdjusting] = useState<number | null>(null)
   const [result, setResult] = useState<CompleteWorkoutResult | null>(null)
-  // Index into result.unlocks while the celebration plays; once past the end,
-  // the normal summary shows.
-  const [celebrateIdx, setCelebrateIdx] = useState(0)
+  // Unlocks still to be celebrated; while non-empty the full-screen moment
+  // plays instead of the summary.
+  const [celebrating, setCelebrating] = useState<UnlockEntry[] | null>(null)
+  // Challenge offers left on the summary, and which one is being attempted.
+  const [offers, setOffers] = useState<ChallengeOffer[]>([])
+  const [attempting, setAttempting] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -145,8 +154,11 @@ export function WorkoutCheckoff({
       if ("error" in response) {
         setError(response.error)
       } else {
-        setCelebrateIdx(0)
         setResult(response.result)
+        setOffers(response.result.challenges ?? [])
+        if (response.result.unlocks.length > 0) {
+          setCelebrating(response.result.unlocks)
+        }
       }
     })
   }
@@ -158,37 +170,12 @@ export function WorkoutCheckoff({
   // ------------------------------------------------------------------ views
 
   // Full-screen unlock moment(s), played before the summary is revealed.
-  if (result && celebrateIdx < result.unlocks.length) {
-    const unlock = result.unlocks[celebrateIdx]
-    const total = result.unlocks.length
+  if (celebrating && celebrating.length > 0) {
     return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col items-center justify-center gap-8 px-6 py-10 text-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="text-6xl">🔓</div>
-          <p className="text-sm font-medium tracking-wide text-primary uppercase">
-            Skill unlocked
-          </p>
-          <h1 className="font-heading text-4xl font-semibold">{unlock.name}</h1>
-          {total > 1 && (
-            <p className="text-xs text-muted-foreground">
-              {celebrateIdx + 1} of {total}
-            </p>
-          )}
-        </div>
-
-        <div className="flex flex-col items-center gap-1">
-          <p className="text-3xl font-semibold">+{unlock.xp} XP</p>
-          <p className="text-muted-foreground">+{SKILL_UNLOCK_XP.points} points</p>
-        </div>
-
-        <Button
-          size="lg"
-          className="h-12 w-full"
-          onClick={() => setCelebrateIdx((i) => i + 1)}
-        >
-          {celebrateIdx + 1 < total ? "Next unlock" : "Continue"}
-        </Button>
-      </main>
+      <UnlockCelebration
+        unlocks={celebrating}
+        onDone={() => setCelebrating(null)}
+      />
     )
   }
 
@@ -257,6 +244,69 @@ export function WorkoutCheckoff({
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {offers.length > 0 && (
+          <div className="w-full rounded-xl border border-primary/40 bg-primary/5 p-4 text-left">
+            <p className="text-sm font-medium">⚡ Challenge available</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Today&apos;s numbers say you&apos;re ready. Attempt it now to
+              unlock?
+            </p>
+            <ul className="mt-3 flex flex-col gap-3">
+              {offers.map((offer) => (
+                <li key={offer.exercise_id}>
+                  <p className="font-medium">{offer.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {offer.criteria?.description ?? "Log the criteria to unlock."}
+                  </p>
+
+                  {attempting === offer.exercise_id ? (
+                    <ChallengePanel
+                      target={{
+                        exerciseId: offer.exercise_id,
+                        name: offer.name,
+                        criteria: offer.criteria,
+                      }}
+                      onResult={(attempt) => {
+                        setAttempting(null)
+                        setOffers((o) =>
+                          o.filter((x) => x.exercise_id !== offer.exercise_id)
+                        )
+                        setCelebrating(attempt.unlocks)
+                      }}
+                      onCancel={() => setAttempting(null)}
+                    />
+                  ) : (
+                    <div className="mt-2 flex gap-2">
+                      <Button
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => setAttempting(offer.exercise_id)}
+                      >
+                        Attempt it
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setOffers((o) =>
+                            o.filter((x) => x.exercise_id !== offer.exercise_id)
+                          )
+                          void declineChallenge(offer.exercise_id)
+                        }}
+                      >
+                        Later
+                      </Button>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Skipped challenges stay marked ⚡ on your skill paths.
+            </p>
           </div>
         )}
 
@@ -469,42 +519,5 @@ export function WorkoutCheckoff({
         </>
       )}
     </main>
-  )
-}
-
-function Stepper({
-  label,
-  value,
-  onChange,
-}: {
-  label: string
-  value: number
-  onChange: (delta: number) => void
-}) {
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-1">
-        <Button
-          type="button"
-          variant="outline"
-          size="icon-sm"
-          aria-label={`Decrease ${label}`}
-          onClick={() => onChange(-1)}
-        >
-          −
-        </Button>
-        <span className="w-8 text-center font-medium tabular-nums">{value}</span>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon-sm"
-          aria-label={`Increase ${label}`}
-          onClick={() => onChange(1)}
-        >
-          +
-        </Button>
-      </div>
-    </div>
   )
 }

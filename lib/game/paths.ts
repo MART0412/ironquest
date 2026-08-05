@@ -9,6 +9,7 @@
 // paths. Unlocks are per-exercise, so an unlocked shared node renders unlocked
 // in every path that contains it.
 
+import { hasOpenChallenge } from "@/lib/game/challenges"
 import { nodeState, type NodeState, type StatKey } from "@/lib/game/skill-tree"
 import type { UnlockCriteria } from "@/lib/game/skills"
 
@@ -57,6 +58,8 @@ export type PathExercise = {
   name: string
   unlock_criteria: UnlockCriteria | null
   demo_notes: string | null
+  /** Open/!resolved challenge state for this exercise, if any. */
+  challengeStatus?: string | null
 }
 
 export type PathInput = {
@@ -85,6 +88,10 @@ export type PathNode = {
   unlockedAt: string | null
   /** Name of the preceding node in this path, for locked-state messaging. */
   prerequisiteName: string | null
+  /** Raw challenge status from skill_challenges, if a row exists. */
+  challengeStatus: string | null
+  /** True when an unresolved challenge should show a "Challenge Ready" badge. */
+  challengeReady: boolean
 }
 
 export type PathEdge = { from: string; to: string }
@@ -196,6 +203,11 @@ export function buildPathTracks(
         demoNotes: entry.exercise.demo_notes,
         unlockedAt: unlockedAtById.get(entry.exercise.id) ?? null,
         prerequisiteName: i > 0 ? ordered[i - 1].exercise.name : null,
+        challengeStatus: entry.exercise.challengeStatus ?? null,
+        // A resolved (completed) challenge is just an unlock; only open ones badge.
+        challengeReady:
+          nodeState(entry.exercise, ordered.map((o) => o.exercise), unlockedIds) !==
+            "unlocked" && hasOpenChallenge(entry.exercise.challengeStatus),
       }
     })
 
@@ -221,6 +233,24 @@ export function buildPathTracks(
       progress: nodes.length > 0 ? unlockedCount / nodes.length : 0,
     }
   })
+}
+
+/**
+ * How many skills a fast-track clear of `nodeId` would credit: every
+ * still-locked node before it in EVERY path that contains it, counted once — a
+ * node skipped in two paths is one credit, mirroring the cascade in
+ * attempt_challenge.
+ */
+export function cascadeCandidates(tracks: PathTrack[], nodeId: string): string[] {
+  const ids = new Set<string>()
+  for (const track of tracks) {
+    const index = track.nodes.findIndex((n) => n.id === nodeId)
+    if (index < 0) continue
+    for (const node of track.nodes.slice(0, index)) {
+      if (node.state !== "unlocked") ids.add(node.id)
+    }
+  }
+  return [...ids]
 }
 
 /** Loud when strict, logged otherwise — never silently renders a bad path. */

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 
+import type { ChallengeOffer } from "@/lib/actions/challenges"
 import { createClient } from "@/lib/supabase/server"
 import {
   completeWorkoutSchema,
@@ -38,6 +39,8 @@ export type CompleteWorkoutResult = {
   reset: boolean
   unlocks: SkillUnlock[]
   prs: PersonalRecord[]
+  /** Locked neighbours your numbers say you're ready to challenge. */
+  challenges: ChallengeOffer[]
 }
 
 export async function completeWorkout(

@@ -1,9 +1,12 @@
 "use client"
 
 import { X } from "lucide-react"
+import { useState } from "react"
 
+import { ChallengePanel } from "@/components/skills/challenge-panel"
 import type { BestPerf } from "@/components/skills/skill-tree-view"
 import { Button } from "@/components/ui/button"
+import type { AttemptResult } from "@/lib/actions/challenges"
 import type { PathNode } from "@/lib/game/paths"
 import { MX_TZ } from "@/lib/game/streak"
 import { cn } from "@/lib/utils"
@@ -24,12 +27,19 @@ const STATE_LABEL: Record<PathNode["state"], string> = {
 export function NodeDetailSheet({
   node,
   best,
+  cascadeCount = 0,
+  onUnlocked,
   onClose,
 }: {
   node: PathNode | null
   best: BestPerf | undefined
+  /** Still-locked skills earlier in this path — credited by a fast-track clear. */
+  cascadeCount?: number
+  onUnlocked: (result: AttemptResult) => void
   onClose: () => void
 }) {
+  const [attempting, setAttempting] = useState(false)
+
   if (!node) return null
 
   const criteria = node.criteria
@@ -40,12 +50,22 @@ export function NodeDetailSheet({
         ? { label: "sec", goal: criteria.seconds, have: best?.seconds ?? 0 }
         : null
 
+  // The frontier node is a plain attempt; anything further right is a
+  // fast-track that also credits the skills it skips.
+  const fastTrack = node.state === "locked"
+  const canAttempt = node.state !== "unlocked" && !!criteria
+
+  function close() {
+    setAttempting(false)
+    onClose()
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end" role="dialog" aria-modal="true">
       <button
         aria-label="Close"
         className="absolute inset-0 bg-black/40"
-        onClick={onClose}
+        onClick={close}
       />
       <div className="relative mx-auto w-full max-w-sm rounded-t-2xl border border-border bg-background p-6 pb-8">
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" />
@@ -64,10 +84,11 @@ export function NodeDetailSheet({
               {node.state === "unlocked" && node.unlockedAt && (
                 <> · {dateFmt.format(new Date(node.unlockedAt))}</>
               )}
+              {node.challengeReady && <> · ⚡ Challenge ready</>}
             </p>
             <h2 className="font-heading text-xl font-semibold">{node.name}</h2>
           </div>
-          <Button variant="ghost" size="icon-sm" aria-label="Close" onClick={onClose}>
+          <Button variant="ghost" size="icon-sm" aria-label="Close" onClick={close}>
             <X />
           </Button>
         </div>
@@ -107,16 +128,47 @@ export function NodeDetailSheet({
           </div>
         )}
 
-        {node.state === "locked" && node.prerequisiteName && (
+        {node.state === "locked" && node.prerequisiteName && !attempting && (
           <p className="mt-4 text-sm text-muted-foreground">
-            🔒 Unlock <span className="font-medium text-foreground">{node.prerequisiteName}</span> first.
+            🔒 Normally you&apos;d unlock{" "}
+            <span className="font-medium text-foreground">
+              {node.prerequisiteName}
+            </span>{" "}
+            first — or challenge this one directly.
           </p>
         )}
-        {node.state === "next" && (
+        {node.state === "next" && !attempting && (
           <p className="mt-4 text-sm text-muted-foreground">
             Hit the criteria in a logged workout to light this node and earn{" "}
             <span className="font-medium text-foreground">+200 XP</span>.
           </p>
+        )}
+
+        {canAttempt && !attempting && (
+          <Button
+            className="mt-4 h-11 w-full"
+            variant={node.challengeReady || node.state === "next" ? "default" : "outline"}
+            onClick={() => setAttempting(true)}
+          >
+            {fastTrack ? "Challenge this skill" : "Attempt challenge"}
+          </Button>
+        )}
+
+        {canAttempt && attempting && (
+          <ChallengePanel
+            target={{
+              exerciseId: node.id,
+              name: node.name,
+              criteria,
+              cascadeCount,
+            }}
+            fastTrack={fastTrack}
+            onResult={(result) => {
+              setAttempting(false)
+              onUnlocked(result)
+            }}
+            onCancel={() => setAttempting(false)}
+          />
         )}
       </div>
     </div>

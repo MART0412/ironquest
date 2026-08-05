@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import {
   buildPathTracks,
+  cascadeCandidates,
   PATH_STAT_WEIGHTS,
   validatePathNodes,
   type PathInput,
@@ -127,6 +128,37 @@ describe("buildPathTracks — left→right progression", () => {
     for (const track of buildPathTracks(twoSharedPaths(), [])) {
       expect(validatePathNodes(track.nodes).ok).toBe(true)
     }
+  })
+})
+
+describe("cascadeCandidates — what a fast-track clear would credit", () => {
+  it("credits every still-locked node before the target", () => {
+    const tracks = buildPathTracks(twoSharedPaths(), [])
+    expect(cascadeCandidates(tracks, "fl").sort()).toEqual(["hang", "tuck"])
+  })
+
+  it("skips nodes already unlocked", () => {
+    const tracks = buildPathTracks(twoSharedPaths(), [unlock("hang")])
+    expect(cascadeCandidates(tracks, "fl")).toEqual(["tuck"])
+  })
+
+  it("counts a node shared by two paths only once", () => {
+    // Making both capstones reachable would double-count "hang" if the union
+    // weren't deduped; here we check the shared node from one target's view.
+    const tracks = buildPathTracks(twoSharedPaths(), [])
+    const ids = cascadeCandidates(tracks, "hang")
+    expect(ids).toEqual([])
+  })
+
+  it("never reaches across into a path that lacks the target", () => {
+    const tracks = buildPathTracks(twoSharedPaths(), [])
+    // Back Lever's own predecessors only — no Front Lever nodes.
+    expect(cascadeCandidates(tracks, "bl").sort()).toEqual(["german", "hang"])
+  })
+
+  it("is empty for the first node and for an unknown id", () => {
+    const tracks = buildPathTracks(twoSharedPaths(), [])
+    expect(cascadeCandidates(tracks, "nope")).toEqual([])
   })
 })
 

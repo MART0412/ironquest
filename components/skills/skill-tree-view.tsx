@@ -1,10 +1,20 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
 import { NodeDetailSheet } from "@/components/skills/node-detail-sheet"
-import { PATH_LAYOUT, type PathNode, type PathTrack } from "@/lib/game/paths"
+import {
+  UnlockCelebration,
+  type UnlockEntry,
+} from "@/components/skills/unlock-celebration"
+import {
+  cascadeCandidates,
+  PATH_LAYOUT,
+  type PathNode,
+  type PathTrack,
+} from "@/lib/game/paths"
 import { cn } from "@/lib/utils"
 
 export type BestPerf = { reps: number | null; seconds: number | null }
@@ -16,7 +26,21 @@ export function SkillTreeView({
   tracks: PathTrack[]
   bestByExercise: Record<string, BestPerf>
 }) {
+  const router = useRouter()
   const [selected, setSelected] = useState<PathNode | null>(null)
+  const [celebrating, setCelebrating] = useState<UnlockEntry[] | null>(null)
+
+  if (celebrating) {
+    return (
+      <UnlockCelebration
+        unlocks={celebrating}
+        onDone={() => {
+          setCelebrating(null)
+          router.refresh()
+        }}
+      />
+    )
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col gap-6 px-6 py-8">
@@ -41,6 +65,11 @@ export function SkillTreeView({
       <NodeDetailSheet
         node={selected}
         best={selected ? bestByExercise[selected.id] : undefined}
+        cascadeCount={selected ? cascadeCandidates(tracks, selected.id).length : 0}
+        onUnlocked={(result) => {
+          setSelected(null)
+          setCelebrating(result.unlocks)
+        }}
         onClose={() => setSelected(null)}
       />
     </main>
@@ -142,12 +171,13 @@ function TreeNode({
       transform={`translate(${node.x} ${node.y})`}
       role="button"
       tabIndex={0}
-      aria-label={`${node.name} — ${node.state}${node.isCapstone ? ", signature skill" : ""}${node.pathCount > 1 ? `, in ${node.pathCount} paths` : ""}`}
+      aria-label={`${node.name} — ${node.state}${node.isCapstone ? ", signature skill" : ""}${node.pathCount > 1 ? `, in ${node.pathCount} paths` : ""}${node.challengeReady ? ", challenge ready" : ""}`}
       data-slug={node.slug}
       data-state={node.state}
       data-position={node.position}
       data-capstone={node.isCapstone ? "true" : "false"}
       data-path-count={node.pathCount}
+      data-challenge={node.challengeReady ? "ready" : ""}
       style={{ cursor: "pointer" }}
       onClick={() => onSelect(node)}
       onKeyDown={(e) => {
@@ -209,6 +239,30 @@ function TreeNode({
         >
           {node.isCapstone ? "★" : node.position}
         </text>
+      )}
+
+      {/* Challenge Ready: an offered/declined/failed challenge still waiting. */}
+      {node.challengeReady && (
+        <>
+          <circle
+            r={r + 3}
+            fill="none"
+            className="stroke-primary"
+            strokeWidth={1.5}
+            strokeDasharray="3 3"
+            opacity={0.9}
+          />
+          <g transform={`translate(${-r + 2} ${-r - 2})`}>
+            <circle r={9} className="fill-primary" />
+            <text
+              y={3.5}
+              textAnchor="middle"
+              className="fill-primary-foreground text-[10px] font-bold"
+            >
+              ⚡
+            </text>
+          </g>
+        </>
       )}
 
       {/* Shared-node badge: this exercise feeds more than one path. */}

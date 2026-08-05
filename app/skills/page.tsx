@@ -12,7 +12,7 @@ export default async function SkillsPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
-  const [{ data: paths }, { data: unlocks }, { data: workouts }] =
+  const [{ data: paths }, { data: unlocks }, { data: workouts }, { data: chals }] =
     await Promise.all([
       // Paths with their ordered nodes (public read-only library).
       supabase
@@ -24,7 +24,13 @@ export default async function SkillsPage() {
       supabase.from("skill_unlocks").select("exercise_id, unlocked_at"),
       // RLS scopes workouts (and thus embedded sets) to the caller.
       supabase.from("workouts").select("workout_sets(exercise_id, reps, seconds)"),
+      supabase.from("skill_challenges").select("exercise_id, status"),
     ])
+
+  // Challenge state per exercise, so locked nodes can badge "Challenge Ready".
+  const challengeByExercise = new Map(
+    (chals ?? []).map((c) => [c.exercise_id, c.status])
+  )
 
   // Best logged performance per exercise, aggregated from the user's sets.
   const bestByExercise: Record<string, BestPerf> = {}
@@ -52,6 +58,7 @@ export default async function SkillsPage() {
           name: n.exercises!.name,
           unlock_criteria: n.exercises!.unlock_criteria as UnlockCriteria | null,
           demo_notes: n.exercises!.demo_notes,
+          challengeStatus: challengeByExercise.get(n.exercises!.id) ?? null,
         },
       })),
   }))
