@@ -24,7 +24,7 @@ export default async function WorkoutPage() {
       supabase
         .from("routines")
         .select(
-          "id, name, day_of_week, routine_items(exercise_id, sets, reps_or_seconds, is_hold, sort_order, exercises(name))"
+          "id, name, day_of_week, routine_items(id, exercise_id, sets, reps_or_seconds, is_hold, sort_order, exercises(name))"
         )
         .order("created_at", { ascending: true }),
       supabase
@@ -42,6 +42,7 @@ export default async function WorkoutPage() {
     items: [...r.routine_items]
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((item) => ({
+        routineItemId: item.id,
         exerciseId: item.exercise_id,
         exerciseName: item.exercises?.name ?? "Unknown exercise",
         sets: item.sets,

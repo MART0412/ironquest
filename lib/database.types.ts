@@ -312,6 +312,63 @@ export type Database = {
           },
         ]
       }
+      prescription_adjustments: {
+        Row: {
+          created_at: string
+          exercise_id: string
+          from_reps: number | null
+          from_sets: number | null
+          id: string
+          kind: string
+          outcome: string
+          routine_item_id: string | null
+          to_reps: number | null
+          to_sets: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          exercise_id: string
+          from_reps?: number | null
+          from_sets?: number | null
+          id?: string
+          kind: string
+          outcome: string
+          routine_item_id?: string | null
+          to_reps?: number | null
+          to_sets?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          exercise_id?: string
+          from_reps?: number | null
+          from_sets?: number | null
+          id?: string
+          kind?: string
+          outcome?: string
+          routine_item_id?: string | null
+          to_reps?: number | null
+          to_sets?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescription_adjustments_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescription_adjustments_routine_item_id_fkey"
+            columns: ["routine_item_id"]
+            isOneToOne: false
+            referencedRelation: "routine_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           activity_factor: number | null
@@ -658,6 +715,7 @@ export type Database = {
       }
       workout_sets: {
         Row: {
+          difficulty: string | null
           exercise_id: string
           reps: number | null
           rpe: number | null
@@ -666,6 +724,7 @@ export type Database = {
           workout_id: string
         }
         Insert: {
+          difficulty?: string | null
           exercise_id: string
           reps?: number | null
           rpe?: number | null
@@ -674,6 +733,7 @@ export type Database = {
           workout_id: string
         }
         Update: {
+          difficulty?: string | null
           exercise_id?: string
           reps?: number | null
           rpe?: number | null

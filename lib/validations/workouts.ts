@@ -6,6 +6,10 @@ export const checkedItemSchema = z.object({
   sets: z.number().int().min(1).max(10),
   repsOrSeconds: z.number().int().min(1).max(600),
   isHold: z.boolean(),
+  /** Optional one-tap feedback; null/absent means the user said nothing. */
+  difficulty: z.enum(["easy", "normal", "hard"]).nullish(),
+  /** Which routine row this came from, so an adaptation can update it. */
+  routineItemId: z.uuid().nullish(),
 })
 
 export const completeWorkoutSchema = z.object({

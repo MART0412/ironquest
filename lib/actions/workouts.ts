@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache"
 
 import type { ChallengeOffer } from "@/lib/actions/challenges"
+import {
+  proposeAdaptations,
+  type AdaptationProposal,
+} from "@/lib/fitness/proposals"
 import { createClient } from "@/lib/supabase/server"
 import {
   completeWorkoutSchema,
@@ -41,6 +45,8 @@ export type CompleteWorkoutResult = {
   prs: PersonalRecord[]
   /** Locked neighbours your numbers say you're ready to challenge. */
   challenges: ChallengeOffer[]
+  /** Volume changes to offer the user — proposals only, never applied. */
+  adaptations: AdaptationProposal[]
 }
 
 export async function completeWorkout(
@@ -57,7 +63,9 @@ export async function completeWorkout(
   } = await supabase.auth.getUser()
   if (!user) return { error: "Your session expired. Please sign in again." }
 
-  // Expand checked exercises into per-set rows for the engine.
+  // Expand checked exercises into per-set rows for the engine. Mode A collects
+  // one difficulty per exercise, which applies to each of its sets; the column
+  // is per-set so Mode B can vary it later.
   const sets = parsed.data.items.flatMap((item) =>
     Array.from({ length: item.sets }, (_, i) => ({
       exercise_id: item.exerciseId,
@@ -65,6 +73,7 @@ export async function completeWorkout(
       reps: item.isHold ? null : item.repsOrSeconds,
       seconds: item.isHold ? item.repsOrSeconds : null,
       rpe: null,
+      difficulty: item.difficulty ?? null,
     }))
   )
 
@@ -77,7 +86,16 @@ export async function completeWorkout(
     return { error: "Could not complete the workout. Please try again." }
   }
 
+  const result = data as unknown as CompleteWorkoutResult
+
+  // Adaptation proposals are read-only advice derived from the sets just
+  // written, so they're computed after the engine, not inside it.
+  const routineItemIds = parsed.data.items
+    .map((item) => item.routineItemId)
+    .filter((id): id is string => !!id)
+  result.adaptations = await proposeAdaptations(supabase, routineItemIds)
+
   revalidatePath("/")
   revalidatePath("/workout")
-  return { result: data as unknown as CompleteWorkoutResult }
+  return { result }
 }

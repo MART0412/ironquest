@@ -6,6 +6,7 @@ import { useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 
 import { ChallengePanel } from "@/components/skills/challenge-panel"
+import { AdaptationCard } from "@/components/workout/adaptation-card"
 import {
   UnlockCelebration,
   type UnlockEntry,
@@ -18,9 +19,12 @@ import {
   type CompleteWorkoutResult,
 } from "@/lib/actions/workouts"
 import type { Weekday } from "@/lib/data/splits"
+import type { Difficulty } from "@/lib/fitness/adaptation"
+import type { AdaptationProposal } from "@/lib/fitness/proposals"
 import { cn } from "@/lib/utils"
 
 type CheckoffItem = {
+  routineItemId: string
   exerciseId: string
   exerciseName: string
   sets: number
@@ -35,7 +39,17 @@ type CheckoffRoutine = {
 }
 
 /** Per-item check state: undefined = unchecked; otherwise the (possibly adjusted) prescription. */
-type Checked = Record<number, { sets: number; repsOrSeconds: number } | undefined>
+type Checked = Record<
+  number,
+  { sets: number; repsOrSeconds: number; difficulty: Difficulty | null } | undefined
+>
+
+/** One-tap feedback. Untapped stays null — silence isn't a signal. */
+const DIFFICULTIES: { value: Difficulty; label: string; icon: string }[] = [
+  { value: "easy", label: "Easy", icon: "😌" },
+  { value: "normal", label: "OK", icon: "🙂" },
+  { value: "hard", label: "Hard", icon: "😤" },
+]
 
 const DAY_LABELS: Record<Weekday, string> = {
   mon: "Monday",
@@ -70,6 +84,8 @@ export function WorkoutCheckoff({
   // Challenge offers left on the summary, and which one is being attempted.
   const [offers, setOffers] = useState<ChallengeOffer[]>([])
   const [attempting, setAttempting] = useState<string | null>(null)
+  // Volume proposals left to answer on the summary.
+  const [adaptations, setAdaptations] = useState<AdaptationProposal[]>([])
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -96,7 +112,12 @@ export function WorkoutCheckoff({
     const item = active.items[index]
     setChecked((c) => ({
       ...c,
-      [index]: c[index] ?? { sets: item.sets, repsOrSeconds: item.repsOrSeconds },
+      [index]:
+        c[index] ?? {
+          sets: item.sets,
+          repsOrSeconds: item.repsOrSeconds,
+          difficulty: null,
+        },
     }))
     setAdjusting(index)
   }
@@ -110,7 +131,11 @@ export function WorkoutCheckoff({
       ...c,
       [index]: c[index]
         ? undefined
-        : { sets: item.sets, repsOrSeconds: item.repsOrSeconds },
+        : {
+            sets: item.sets,
+            repsOrSeconds: item.repsOrSeconds,
+            difficulty: null,
+          },
     }))
   }
 
@@ -129,6 +154,18 @@ export function WorkoutCheckoff({
     })
   }
 
+  /** Tapping the active chip clears it — you can take back a mis-tap. */
+  function setDifficulty(index: number, value: Difficulty) {
+    setChecked((c) => {
+      const cur = c[index]
+      if (!cur) return c
+      return {
+        ...c,
+        [index]: { ...cur, difficulty: cur.difficulty === value ? null : value },
+      }
+    })
+  }
+
   function selectRoutine(routine: CheckoffRoutine | null) {
     setActive(routine)
     setChecked({})
@@ -143,9 +180,11 @@ export function WorkoutCheckoff({
       .filter((x) => x.state)
       .map(({ item, state }) => ({
         exerciseId: item.exerciseId,
+        routineItemId: item.routineItemId,
         sets: state!.sets,
         repsOrSeconds: state!.repsOrSeconds,
         isHold: item.isHold,
+        difficulty: state!.difficulty,
       }))
 
     setError(null)
@@ -156,6 +195,7 @@ export function WorkoutCheckoff({
       } else {
         setResult(response.result)
         setOffers(response.result.challenges ?? [])
+        setAdaptations(response.result.adaptations ?? [])
         if (response.result.unlocks.length > 0) {
           setCelebrating(response.result.unlocks)
         }
@@ -246,6 +286,18 @@ export function WorkoutCheckoff({
             </ul>
           </div>
         )}
+
+        {adaptations.map((proposal) => (
+          <AdaptationCard
+            key={proposal.routineItemId}
+            proposal={proposal}
+            onResolved={() =>
+              setAdaptations((list) =>
+                list.filter((p) => p.routineItemId !== proposal.routineItemId)
+              )
+            }
+          />
+        ))}
 
         {offers.length > 0 && (
           <div className="w-full rounded-xl border border-primary/40 bg-primary/5 p-4 text-left">
@@ -475,6 +527,32 @@ export function WorkoutCheckoff({
                     </Button>
                   </div>
 
+                  {state && (
+                    <div
+                      role="group"
+                      aria-label={`How did ${item.exerciseName} feel?`}
+                      className="mt-1 flex gap-1"
+                    >
+                      {DIFFICULTIES.map((d) => (
+                        <button
+                          key={d.value}
+                          type="button"
+                          aria-pressed={state.difficulty === d.value}
+                          onClick={() => setDifficulty(i, d.value)}
+                          className={cn(
+                            "flex-1 rounded-lg border py-1.5 text-xs transition-colors",
+                            "focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                            state.difficulty === d.value
+                              ? "border-primary bg-primary/10 font-medium"
+                              : "border-border text-muted-foreground hover:bg-muted"
+                          )}
+                        >
+                          {d.icon} {d.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   {isAdjusting && state && (
                     <div className="mt-1 flex items-center justify-between rounded-xl border border-border bg-muted/40 p-3">
                       <Stepper
@@ -514,7 +592,8 @@ export function WorkoutCheckoff({
               : `Complete workout (${checkedCount}/${active.items.length})`}
           </Button>
           <p className="text-center text-xs text-muted-foreground">
-            Tap to check off as prescribed · hold or ✎ to adjust
+            Tap to check off as prescribed · hold or ✎ to adjust · the
+            easy/OK/hard chips are optional
           </p>
         </>
       )}
