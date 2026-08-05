@@ -10,7 +10,7 @@ Gamified calisthenics + nutrition PWA. Full product spec lives in `docs/spec.md`
 - Tailwind + shadcn/ui — use existing shadcn components before writing custom ones
 - Supabase: Postgres + Auth + Storage. RLS on every table, scoped to auth.uid()
 - Deployed on Vercel
-- Claude API (claude-sonnet-4-6) for meal macro estimation — Phase 3 only
+- Claude API for meal macro estimation — **Phase 4 only** (confirm the current model at build time; the previously pinned `claude-sonnet-4-6` is dated)
 
 ## Hard rules
 1. **Migrations only via Supabase CLI.** Schema changes = new file in `supabase/migrations/`, never dashboard edits. Never modify an already-pushed migration; write a new one.
@@ -19,7 +19,7 @@ Gamified calisthenics + nutrition PWA. Full product spec lives in `docs/spec.md`
 4. **Every logging flow must be completable in under 20 seconds.** If a feature adds taps to workout check-off or meal logging, flag it before building.
 5. **One vertical slice per session.** Don't scaffold ahead of the current slice. No placeholder pages for future phases.
 6. **XP/points mutations go through a single server-side function** (`xp_ledger` insert + derived updates). Never award XP from client code.
-7. **Phase discipline:** we are in **Phase 3 (intelligence)** as of 2026-07-22 (Phases 1 & 2 complete — see phase status below). Do not implement Phase 4 work (disciplines / multiclassing, body evolution) until its phase.
+7. **Phase discipline:** we are in **Phase 3 (disciplines + measurement)** as of 2026-07-28 (Phases 1 & 2 complete — see phase status below). Do not implement Phase 4 work (AI meal estimation, compensation feature, Open Food Facts/barcode, productization) until its phase.
 
 ## Conventions
 - Server actions for mutations; React Query for client cache where needed
@@ -31,14 +31,18 @@ Gamified calisthenics + nutrition PWA. Full product spec lives in `docs/spec.md`
 
 ## Phase status
 - **Phase 1 — Core loop: ✅ complete.** Auth + onboarding (TDEE/targets/split), full schema + RLS, routine builder + 3 template splits, workout check-off + XP/streak engine, home/character sheet, manual food logging + My Foods.
-- **Phase 2 — Game layer: ✅ complete (verified 2026-07-28).** Skill-unlock + PR engine; skill tree UI (left→right per-branch progression, no pan/zoom) + stat radar + full-screen unlock celebration; points store (real-life rewards, atomic redeem) + cosmetics tab; layered avatar with man/woman character selection (onboarding step + profile setting, data-driven figure registry); five app-wide art-style themes with optional CSS-only background layers. Backlog B1/B2-base are **done** — what remains is Phase 4 (B2-evolution, B3).
-- **Current phase: 3 — Intelligence.** Slices in order:
-  1. AI meal macro estimation (Claude API — CLAUDE.md pins claude-sonnet-4-6; confirm/refresh the model at build time)
+- **Phase 2 — Game layer: ✅ complete (verified 2026-07-28).** Skill-unlock + PR engine; skill tree UI (left→right per-branch progression, no pan/zoom) + stat radar + full-screen unlock celebration; points store (real-life rewards, atomic redeem) + cosmetics tab; layered avatar with man/woman character selection (onboarding step + profile setting, data-driven figure registry); five app-wide art-style themes with optional CSS-only background layers. Backlog B1/B2-base are **done**; B3 + B2-evolution now land in Phase 3.
+- **Current phase: 3 — Disciplines + measurement (reordered 2026-07-28).** Finish the *fitness* experience before introducing a second life-change; nutrition intelligence is a separate behaviour change and adoption is easier one at a time. Slices in order:
+  1. **Disciplines / multiclassing** (B3 — calisthenics, gym/weights, running, cycling, yoga+mobility): per-discipline exercise library + skill paths, multiclass unlock at a level threshold, discipline-flavoured stat radar. Schema note: the `exercises` migration generalizes `branch` → `discipline + branch`.
+  2. **Body evolution by training style** (B2-evolution) — depends on 1 defining the disciplines.
+  3. **Weekly check-in flow** (weight + measurements + photos → `checkins`, Storage bucket + trend charts). Stays in near-term scope: it *measures the fitness goal*, it is not nutrition.
+- **Phase 4 — Nutrition intelligence + productization (later):**
+  1. AI meal macro estimation (Claude API — confirm/refresh the pinned model at build time)
   2. Meal compensation feature (strict/neutral, comp quests)
   3. Open Food Facts + barcode lookup
-  4. Weekly check-in flow (weight + measurements + photos → `checkins`, Storage bucket)
-- **Phase 4 — Productization (later):** **disciplines** / multiclassing (B3 — calisthenics, gym/weights, running, cycling, yoga), body evolution by training style (B2-evolution). Schema note: a future `exercises` migration generalizes `branch` → `discipline + branch`.
-  - **Naming:** "**path**" now means a goal-skill line in the skill tree (Planche Path, Front Lever Path — `skill_paths` / `skill_path_nodes`, Session 12). Phase 4's cross-modality concept is a "**discipline**". Don't reuse "path" for it.
+  4. Productization: push notifications, offline sync hardening, onboarding for strangers, landing page.
+  **Manual food logging (Phase 1) stays as-is** — it is the working baseline these features layer onto.
+- **Naming:** "**path**" means a goal-skill line in the skill tree (Planche Path, Front Lever Path — `skill_paths` / `skill_path_nodes`, Session 12). The cross-modality concept is a "**discipline**". Don't reuse "path" for it.
 
 ## Testing / verification
 - After each slice: `npm run build` must pass clean before considering it done

@@ -212,11 +212,13 @@ Auth, profile/targets onboarding, routine builder + check-off logging, XP/level/
 **Phase 2 — The game (2 weekends):**
 Skill tree UI + unlock detection, points store (both tabs), streak multiplier, PR detection, avatar visuals.
 
-**Phase 3 — Intelligence (1–2 weekends):**
-Claude API meal estimation (text + photo), compensation feature with dual mode, Open Food Facts + barcode, weekly check-in flow with photos and trend charts.
+**Phase 3 — Disciplines + measurement (2–3 weekends):**
+Multi-discipline training (Calisthenics / Gym-Weights / Running / Cycling / Yoga-Mobility): per-discipline exercise library and skill paths, multiclassing gated on a level threshold in the current discipline, discipline-flavoured stat radar, body evolution by training style. Plus the weekly check-in flow with photos and trend charts.
 
-**Phase 4 — Polish / productize:**
-Push notifications, offline sync hardening, onboarding flow for strangers, landing page.
+**Phase 4 — Nutrition intelligence + productize:**
+Claude API meal estimation (text + photo), compensation feature with dual mode, Open Food Facts + barcode. Then push notifications, offline sync hardening, onboarding flow for strangers, landing page.
+
+*Ordering rationale (reordered 2026-07-28):* finish the complete **fitness** experience before introducing a second life-change. Training and eating are two separate behaviour changes; shipping them in sequence means each is adopted on its own. The **weekly check-in stays in Phase 3** because it measures the fitness goal — it is not nutrition. **Manual food logging (Phase 1) remains as-is** and is the baseline Phase 4 layers onto.
 
 ---
 
