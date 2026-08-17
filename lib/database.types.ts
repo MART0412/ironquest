@@ -172,6 +172,33 @@ export type Database = {
         }
         Relationships: []
       }
+      equivalence_milestones: {
+        Row: {
+          id: string
+          metric: string
+          points: number
+          sort_order: number
+          threshold: number
+          xp: number
+        }
+        Insert: {
+          id: string
+          metric: string
+          points?: number
+          sort_order?: number
+          threshold: number
+          xp?: number
+        }
+        Update: {
+          id?: string
+          metric?: string
+          points?: number
+          sort_order?: number
+          threshold?: number
+          xp?: number
+        }
+        Relationships: []
+      }
       exercises: {
         Row: {
           branch: string
@@ -179,6 +206,7 @@ export type Database = {
           demo_notes: string | null
           id: string
           is_custom: boolean
+          movement_family: string | null
           name: string
           slug: string | null
           tier: number
@@ -191,6 +219,7 @@ export type Database = {
           demo_notes?: string | null
           id?: string
           is_custom?: boolean
+          movement_family?: string | null
           name: string
           slug?: string | null
           tier: number
@@ -203,6 +232,7 @@ export type Database = {
           demo_notes?: string | null
           id?: string
           is_custom?: boolean
+          movement_family?: string | null
           name?: string
           slug?: string | null
           tier?: number
@@ -712,6 +742,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_milestones: {
+        Row: {
+          awarded_at: string
+          milestone_id: string
+          user_id: string
+          value_at: number
+          xp_awarded: number
+        }
+        Insert: {
+          awarded_at?: string
+          milestone_id: string
+          user_id: string
+          value_at: number
+          xp_awarded?: number
+        }
+        Update: {
+          awarded_at?: string
+          milestone_id?: string
+          user_id?: string
+          value_at?: number
+          xp_awarded?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_milestones_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "equivalence_milestones"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workout_sets: {
         Row: {

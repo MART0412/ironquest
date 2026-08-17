@@ -4,11 +4,13 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
-import { NodeDetailSheet } from "@/components/skills/node-detail-sheet"
 import {
-  UnlockCelebration,
-  type UnlockEntry,
-} from "@/components/skills/unlock-celebration"
+  Celebration,
+  milestoneEntries,
+  unlockEntries,
+  type CelebrationEntry,
+} from "@/components/game/celebration"
+import { NodeDetailSheet } from "@/components/skills/node-detail-sheet"
 import {
   cascadeCandidates,
   PATH_LAYOUT,
@@ -28,12 +30,12 @@ export function SkillTreeView({
 }) {
   const router = useRouter()
   const [selected, setSelected] = useState<PathNode | null>(null)
-  const [celebrating, setCelebrating] = useState<UnlockEntry[] | null>(null)
+  const [celebrating, setCelebrating] = useState<CelebrationEntry[] | null>(null)
 
   if (celebrating) {
     return (
-      <UnlockCelebration
-        unlocks={celebrating}
+      <Celebration
+        entries={celebrating}
         onDone={() => {
           setCelebrating(null)
           router.refresh()
@@ -68,7 +70,10 @@ export function SkillTreeView({
         cascadeCount={selected ? cascadeCandidates(tracks, selected.id).length : 0}
         onUnlocked={(result) => {
           setSelected(null)
-          setCelebrating(result.unlocks)
+          setCelebrating([
+            ...unlockEntries(result.unlocks),
+            ...milestoneEntries(result.equivalences ?? []),
+          ])
         }}
         onClose={() => setSelected(null)}
       />

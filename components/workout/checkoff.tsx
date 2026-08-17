@@ -5,12 +5,14 @@ import Link from "next/link"
 import { useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 
+import {
+  Celebration,
+  milestoneEntries,
+  unlockEntries,
+  type CelebrationEntry,
+} from "@/components/game/celebration"
 import { ChallengePanel } from "@/components/skills/challenge-panel"
 import { AdaptationCard } from "@/components/workout/adaptation-card"
-import {
-  UnlockCelebration,
-  type UnlockEntry,
-} from "@/components/skills/unlock-celebration"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Stepper } from "@/components/workout/stepper"
 import { declineChallenge, type ChallengeOffer } from "@/lib/actions/challenges"
@@ -20,6 +22,7 @@ import {
 } from "@/lib/actions/workouts"
 import type { Weekday } from "@/lib/data/splits"
 import type { Difficulty } from "@/lib/fitness/adaptation"
+import { milestoneById } from "@/lib/game/equivalences"
 import type { AdaptationProposal } from "@/lib/fitness/proposals"
 import { cn } from "@/lib/utils"
 
@@ -78,9 +81,9 @@ export function WorkoutCheckoff({
   const [checked, setChecked] = useState<Checked>({})
   const [adjusting, setAdjusting] = useState<number | null>(null)
   const [result, setResult] = useState<CompleteWorkoutResult | null>(null)
-  // Unlocks still to be celebrated; while non-empty the full-screen moment
-  // plays instead of the summary.
-  const [celebrating, setCelebrating] = useState<UnlockEntry[] | null>(null)
+  // Ceremony queue (unlocks, then milestones); while non-empty the full-screen
+  // moment plays instead of the summary.
+  const [celebrating, setCelebrating] = useState<CelebrationEntry[] | null>(null)
   // Challenge offers left on the summary, and which one is being attempted.
   const [offers, setOffers] = useState<ChallengeOffer[]>([])
   const [attempting, setAttempting] = useState<string | null>(null)
@@ -196,9 +199,11 @@ export function WorkoutCheckoff({
         setResult(response.result)
         setOffers(response.result.challenges ?? [])
         setAdaptations(response.result.adaptations ?? [])
-        if (response.result.unlocks.length > 0) {
-          setCelebrating(response.result.unlocks)
-        }
+        const ceremony = [
+          ...unlockEntries(response.result.unlocks),
+          ...milestoneEntries(response.result.equivalences ?? []),
+        ]
+        if (ceremony.length > 0) setCelebrating(ceremony)
       }
     })
   }
@@ -209,13 +214,10 @@ export function WorkoutCheckoff({
 
   // ------------------------------------------------------------------ views
 
-  // Full-screen unlock moment(s), played before the summary is revealed.
+  // Full-screen moment(s), played before the summary is revealed.
   if (celebrating && celebrating.length > 0) {
     return (
-      <UnlockCelebration
-        unlocks={celebrating}
-        onDone={() => setCelebrating(null)}
-      />
+      <Celebration entries={celebrating} onDone={() => setCelebrating(null)} />
     )
   }
 
@@ -268,6 +270,27 @@ export function WorkoutCheckoff({
                   {u.name} <span className="text-foreground">+{u.xp} XP</span>
                 </li>
               ))}
+            </ul>
+          </div>
+        )}
+
+        {(result.equivalences ?? []).length > 0 && (
+          <div className="w-full rounded-xl border border-primary/30 bg-primary/5 p-4 text-left">
+            <p className="text-sm font-medium">🏔️ Milestone reached</p>
+            <ul className="mt-1 flex flex-col gap-1">
+              {(result.equivalences ?? []).map((award) => {
+                const milestone = milestoneById(award.milestone_id)
+                if (!milestone) return null
+                return (
+                  <li
+                    key={award.milestone_id}
+                    className="text-sm text-muted-foreground"
+                  >
+                    {milestone.label}{" "}
+                    <span className="text-foreground">+{award.xp} XP</span>
+                  </li>
+                )
+              })}
             </ul>
           </div>
         )}
@@ -326,7 +349,10 @@ export function WorkoutCheckoff({
                         setOffers((o) =>
                           o.filter((x) => x.exercise_id !== offer.exercise_id)
                         )
-                        setCelebrating(attempt.unlocks)
+                        setCelebrating([
+                          ...unlockEntries(attempt.unlocks),
+                          ...milestoneEntries(attempt.equivalences ?? []),
+                        ])
                       }}
                       onCancel={() => setAttempting(null)}
                     />

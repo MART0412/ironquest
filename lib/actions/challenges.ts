@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import * as z from "zod"
 
+import type { MilestoneAward } from "@/lib/game/equivalences"
 import type { UnlockCriteria } from "@/lib/game/skills"
 import { createClient } from "@/lib/supabase/server"
 
@@ -31,6 +32,8 @@ export type AttemptResult = {
     cascaded: boolean
   }[]
   cascaded: number
+  /** Milestones the attempt's own reps pushed past. */
+  equivalences: MilestoneAward[]
 }
 
 const ATTEMPT_MESSAGES: Record<string, string> = {

@@ -165,7 +165,8 @@ Trend charts use 7-day rolling averages. Goal line drawn at target BF% with proj
 4. **Nutrition** — macro rings, meal timeline, AI quick-log input (text/voice/photo), My Foods
 5. **Progress** — weight/BF/measurement charts, photo comparison, weekly check-in flow
 6. **Store** — in-game gear tab + real-life rewards tab (create/redeem)
-7. **Settings** — targets, phase (cut/maintain/build), split schedule, strict/neutral default, units (kg/metric default)
+7. **Lifetime** (`/stats`) — lifetime totals per movement (reps, hold-seconds, workouts) aggregated from `workout_sets`, each translated into a real-world equivalence with a progress bar to the next one ("312/600 pull-ups to summit the Eiffel Tower"). Crossing a threshold pays a small XP bounty and plays in the same ceremony slot as a skill unlock. Thresholds, conversions and copy are config in `lib/game/equivalences.ts`; adding one is a config edit plus `npm run sync:milestones`, never a migration.
+8. **Settings** — targets, phase (cut/maintain/build), split schedule, strict/neutral default, units (kg/metric default)
 
 ---
 

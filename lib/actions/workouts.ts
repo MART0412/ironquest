@@ -7,6 +7,7 @@ import {
   proposeAdaptations,
   type AdaptationProposal,
 } from "@/lib/fitness/proposals"
+import type { MilestoneAward } from "@/lib/game/equivalences"
 import { createClient } from "@/lib/supabase/server"
 import {
   completeWorkoutSchema,
@@ -47,6 +48,8 @@ export type CompleteWorkoutResult = {
   challenges: ChallengeOffer[]
   /** Volume changes to offer the user — proposals only, never applied. */
   adaptations: AdaptationProposal[]
+  /** Real-world equivalences this workout pushed past. */
+  equivalences: MilestoneAward[]
 }
 
 export async function completeWorkout(
