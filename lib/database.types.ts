@@ -920,6 +920,16 @@ export type Database = {
         Returns: Json
       }
       decline_challenge: { Args: { p_exercise_id: string }; Returns: undefined }
+      evaluate_milestones: {
+        Args: {
+          p_before: Json
+          p_mult: number
+          p_today: string
+          p_user: string
+          p_workout: string
+        }
+        Returns: Json
+      }
       evaluate_streak_and_award: {
         Args: {
           p_ref_id?: string
@@ -934,6 +944,7 @@ export type Database = {
           was_reset: boolean
         }[]
       }
+      lifetime_totals: { Args: { p_user: string }; Returns: Json }
       log_meal: {
         Args: {
           p_carbs?: number
