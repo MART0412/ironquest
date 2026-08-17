@@ -21,14 +21,28 @@ import { cn } from "@/lib/utils"
 
 export type BestPerf = { reps: number | null; seconds: number | null }
 
+/** One active discipline and the paths it contributes to the tree. */
+export type DisciplineGroup = {
+  slug: string
+  name: string
+  tracks: PathTrack[]
+  /** False while a discipline is activated but has no library yet. */
+  hasLibrary: boolean
+}
+
 export function SkillTreeView({
-  tracks,
+  groups,
   bestByExercise,
 }: {
-  tracks: PathTrack[]
+  groups: DisciplineGroup[]
   bestByExercise: Record<string, BestPerf>
 }) {
   const router = useRouter()
+  // Cascade counting spans every path the user can see, whatever discipline.
+  const tracks = groups.flatMap((group) => group.tracks)
+  // With a single discipline the page reads exactly as it did before
+  // multiclassing: no headings, just the paths.
+  const grouped = groups.length > 1
   const [selected, setSelected] = useState<PathNode | null>(null)
   const [celebrating, setCelebrating] = useState<CelebrationEntry[] | null>(null)
 
@@ -60,8 +74,30 @@ export function SkillTreeView({
         </p>
       </header>
 
-      {tracks.map((track) => (
-        <PathSection key={track.key} track={track} onSelect={setSelected} />
+      {groups.map((group) => (
+        <section
+          key={group.slug}
+          data-discipline={group.slug}
+          className="flex flex-col gap-6"
+        >
+          {grouped && (
+            <h2 className="font-heading text-sm font-medium tracking-wide text-muted-foreground uppercase">
+              {group.name}
+            </h2>
+          )}
+
+          {group.tracks.map((track) => (
+            <PathSection key={track.key} track={track} onSelect={setSelected} />
+          ))}
+
+          {group.tracks.length === 0 && (
+            <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+              {group.hasLibrary
+                ? "No paths in this discipline yet."
+                : `${group.name} is activated, but its skill paths aren't built yet — they're coming in a later update.`}
+            </p>
+          )}
+        </section>
       ))}
 
       <NodeDetailSheet

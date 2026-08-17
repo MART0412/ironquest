@@ -172,6 +172,33 @@ export type Database = {
         }
         Relationships: []
       }
+      disciplines: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          logging_style: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          logging_style: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          logging_style?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       equivalence_milestones: {
         Row: {
           id: string
@@ -204,6 +231,7 @@ export type Database = {
           branch: string
           created_at: string
           demo_notes: string | null
+          discipline_id: string
           id: string
           is_custom: boolean
           movement_family: string | null
@@ -217,6 +245,7 @@ export type Database = {
           branch: string
           created_at?: string
           demo_notes?: string | null
+          discipline_id: string
           id?: string
           is_custom?: boolean
           movement_family?: string | null
@@ -230,6 +259,7 @@ export type Database = {
           branch?: string
           created_at?: string
           demo_notes?: string | null
+          discipline_id?: string
           id?: string
           is_custom?: boolean
           movement_family?: string | null
@@ -239,7 +269,15 @@ export type Database = {
           unlock_criteria?: Json | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "exercises_discipline_id_fkey"
+            columns: ["discipline_id"]
+            isOneToOne: false
+            referencedRelation: "disciplines"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       foods: {
         Row: {
@@ -651,6 +689,7 @@ export type Database = {
       skill_paths: {
         Row: {
           created_at: string
+          discipline_id: string
           display_order: number
           id: string
           name: string
@@ -659,6 +698,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          discipline_id: string
           display_order?: number
           id?: string
           name: string
@@ -667,6 +707,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          discipline_id?: string
           display_order?: number
           id?: string
           name?: string
@@ -674,6 +715,13 @@ export type Database = {
           slug?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "skill_paths_discipline_id_fkey"
+            columns: ["discipline_id"]
+            isOneToOne: false
+            referencedRelation: "disciplines"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "skill_paths_signature_exercise_id_fkey"
             columns: ["signature_exercise_id"]
@@ -742,6 +790,35 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_disciplines: {
+        Row: {
+          activated_at: string
+          discipline_id: string
+          is_primary: boolean
+          user_id: string
+        }
+        Insert: {
+          activated_at?: string
+          discipline_id: string
+          is_primary?: boolean
+          user_id: string
+        }
+        Update: {
+          activated_at?: string
+          discipline_id?: string
+          is_primary?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_disciplines_discipline_id_fkey"
+            columns: ["discipline_id"]
+            isOneToOne: false
+            referencedRelation: "disciplines"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_milestones: {
         Row: {
@@ -919,6 +996,7 @@ export type Database = {
         Args: { p_routine_id?: string; p_sets?: Json }
         Returns: Json
       }
+      activate_discipline: { Args: { p_slug: string }; Returns: Json }
       decline_challenge: { Args: { p_exercise_id: string }; Returns: undefined }
       evaluate_milestones: {
         Args: {
@@ -945,6 +1023,7 @@ export type Database = {
         }[]
       }
       lifetime_totals: { Args: { p_user: string }; Returns: Json }
+      xp_for_level: { Args: { p_level: number }; Returns: number }
       log_meal: {
         Args: {
           p_carbs?: number

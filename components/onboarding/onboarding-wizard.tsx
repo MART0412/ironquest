@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
+import { DisciplineList } from "@/components/game/discipline-picker"
 import { OptionCard } from "@/components/onboarding/option-card"
 import { completeOnboarding } from "@/lib/actions/onboarding"
 import { SPLIT_TEMPLATES, WEEKDAYS, type SplitKey } from "@/lib/data/splits"
@@ -18,6 +19,11 @@ import {
 } from "@/lib/fitness/tdee"
 import { Avatar } from "@/components/profile/avatar"
 import { resolveCharacter, type AvatarCharacter } from "@/lib/game/avatar"
+import {
+  canActivate,
+  MULTICLASS_MIN_LEVEL,
+  type DisciplineOption,
+} from "@/lib/game/disciplines"
 
 type WizardData = {
   displayName: string
@@ -31,6 +37,7 @@ type WizardData = {
   proteinG: string
   carbsG: string
   fatG: string
+  disciplineSlug: string
   splitKey: SplitKey | ""
 }
 
@@ -46,6 +53,7 @@ const EMPTY: WizardData = {
   proteinG: "",
   carbsG: "",
   fatG: "",
+  disciplineSlug: "",
   splitKey: "",
 }
 
@@ -58,12 +66,17 @@ const STEPS = [
   "body",
   "activity",
   "targets",
+  "discipline",
   "split",
 ] as const
 type StepId = (typeof STEPS)[number]
 const STEP_COUNT = STEPS.length
 
-export function OnboardingWizard() {
+export function OnboardingWizard({
+  disciplines,
+}: {
+  disciplines: DisciplineOption[]
+}) {
   const [step, setStep] = useState(0)
   const [data, setData] = useState<WizardData>(EMPTY)
   const [error, setError] = useState<string | null>(null)
@@ -102,6 +115,8 @@ export function OnboardingWizard() {
           Number(data.carbsG) >= 0 &&
           Number(data.fatG) >= 0
         )
+      case "discipline":
+        return data.disciplineSlug !== ""
       case "split":
         return data.splitKey !== ""
       default:
@@ -137,7 +152,7 @@ export function OnboardingWizard() {
   }
 
   function finish() {
-    if (!data.sex || !data.activity || !data.splitKey) return
+    if (!data.sex || !data.activity || !data.splitKey || !data.disciplineSlug) return
     setError(null)
     startTransition(async () => {
       const result = await completeOnboarding({
@@ -154,6 +169,7 @@ export function OnboardingWizard() {
         carbsG: Number(data.carbsG),
         fatG: Number(data.fatG),
         splitKey: data.splitKey as SplitKey,
+        disciplineSlug: data.disciplineSlug,
       })
       // On success the action redirects; only errors return here.
       if (result?.error) setError(result.error)
@@ -353,6 +369,24 @@ export function OnboardingWizard() {
               </div>
               <p className="mt-4 text-xs text-muted-foreground">
                 Phase: Cut. You can switch to Maintain or Build later in Settings.
+              </p>
+            </Step>
+          )}
+
+          {stepId === "discipline" && (
+            <Step
+              title="How do you train?"
+              subtitle={`Pick where you start. A second discipline unlocks at level ${MULTICLASS_MIN_LEVEL}.`}
+            >
+              <DisciplineList
+                options={disciplines}
+                selectedSlug={data.disciplineSlug}
+                onSelect={(slug) => set("disciplineSlug", slug)}
+              />
+              <p className="mt-4 text-xs text-muted-foreground">
+                {disciplines.filter((d) => canActivate(d.state)).length === 1
+                  ? "Calisthenics is ready today — the rest are being built, and you'll be able to add one once you've levelled up."
+                  : "You can add another discipline later from your profile."}
               </p>
             </Step>
           )}

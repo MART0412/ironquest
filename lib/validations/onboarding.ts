@@ -58,6 +58,12 @@ export const completeOnboardingSchema = onboardingProfileSchema
   .extend(targetsSchema.shape)
   .extend({
     splitKey: z.enum(SPLIT_KEYS, { error: "Choose a training split." }),
+    // The discipline you start in; a second one is earned later (level 15).
+    disciplineSlug: z
+      .string()
+      .trim()
+      .min(2, { error: "Choose a discipline." })
+      .max(40),
     // Avatar presentation — independent of `sex`, which drives the BMR calc.
     avatarCharacter: z.enum(["man", "woman"], {
       error: "Choose your character.",

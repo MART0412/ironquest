@@ -30,6 +30,7 @@ export default async function Home() {
     { data: routines },
     { data: todayWorkouts },
     { data: recentMeals },
+    { data: mine },
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     supabase.from("xp_ledger").select("xp, points"),
@@ -38,7 +39,11 @@ export default async function Home() {
       .select("current_len, best_len")
       .eq("user_id", user.id)
       .maybeSingle(),
-    supabase.from("routines").select("id, name, day_of_week, routine_items(id)"),
+    // routine_items carry their exercise's discipline so today's quest can be
+    // scoped without putting a discipline column on routines themselves.
+    supabase
+      .from("routines")
+      .select("id, name, day_of_week, routine_items(id, exercises!inner(discipline_id))"),
     supabase
       .from("workouts")
       .select("routine_id")
@@ -49,6 +54,7 @@ export default async function Home() {
       .from("meal_logs")
       .select("ts, kcal, protein_g, carbs_g, fat_g")
       .gte("ts", window48h),
+    supabase.from("user_disciplines").select("discipline_id"),
   ])
 
   if (!profile?.onboarding_completed_at) redirect("/onboarding")
@@ -79,8 +85,24 @@ export default async function Home() {
   const completedRoutineIds = new Set(
     (todayWorkouts ?? []).map((w) => w.routine_id).filter(Boolean)
   )
+  // A routine belongs to the disciplines of the movements in it. One with no
+  // items is never hidden — we can't infer its discipline, and hiding
+  // someone's routine is worse than showing it.
+  const activeDisciplineIds = new Set(
+    (mine ?? []).map((row) => row.discipline_id)
+  )
+  const inActiveDiscipline = (
+    items: { exercises: { discipline_id: string } | null }[]
+  ) =>
+    items.length === 0 ||
+    items.some(
+      (item) =>
+        item.exercises && activeDisciplineIds.has(item.exercises.discipline_id)
+    )
+
   const questRoutines: QuestRoutine[] = (routines ?? [])
     .filter((r) => r.day_of_week.includes(todayWeekday))
+    .filter((r) => inActiveDiscipline(r.routine_items))
     .map((r) => ({
       id: r.id,
       name: r.name,

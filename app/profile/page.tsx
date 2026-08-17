@@ -4,10 +4,12 @@ import { redirect } from "next/navigation"
 
 import { Avatar } from "@/components/profile/avatar"
 import { CharacterPicker } from "@/components/profile/character-picker"
+import { DisciplinesCard } from "@/components/profile/disciplines-card"
 import { StatRadar } from "@/components/profile/stat-radar"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { resolveCharacter } from "@/lib/game/avatar"
+import { buildDisciplineOptions } from "@/lib/game/disciplines"
 import { levelFromXp } from "@/lib/game/level"
 import { multiplierFor } from "@/lib/game/streak"
 import { computePathStats } from "@/lib/game/stats"
@@ -29,6 +31,8 @@ export default async function ProfilePage() {
     { data: unlocks },
     { data: equipped },
     { data: streak },
+    { data: disciplines },
+    { data: mine },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -50,6 +54,13 @@ export default async function ProfilePage() {
       .select("current_len, best_len")
       .eq("user_id", user.id)
       .maybeSingle(),
+    supabase
+      .from("disciplines")
+      .select("slug, name")
+      .order("display_order"),
+    supabase
+      .from("user_disciplines")
+      .select("is_primary, disciplines!inner(slug)"),
   ])
 
   const totalXp = (ledger ?? []).reduce((sum, r) => sum + r.xp, 0)
@@ -57,6 +68,15 @@ export default async function ProfilePage() {
   const streakLen = streak?.current_len ?? 0
   const bestLen = streak?.best_len ?? 0
   const character = resolveCharacter(profile?.sex, profile?.avatar_character)
+
+  const disciplineOptions = buildDisciplineOptions({
+    disciplines: disciplines ?? [],
+    active: (mine ?? []).map((row) => ({
+      slug: row.disciplines!.slug,
+      isPrimary: row.is_primary,
+    })),
+    level,
+  })
 
   // Equipped cosmetics → title text, theme accent, gear slots.
   let equippedTitle: string | null = null
@@ -136,6 +156,15 @@ export default async function ProfilePage() {
         </CardHeader>
         <CardContent>
           <StatRadar stats={stats} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Disciplines</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DisciplinesCard options={disciplineOptions} level={level} />
         </CardContent>
       </Card>
 

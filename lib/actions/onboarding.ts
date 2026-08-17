@@ -39,6 +39,15 @@ export async function completeOnboarding(
   const d = parsed.data
   const split = getSplit(d.splitKey)
 
+  // Activate the primary discipline first: it is what scopes the exercise
+  // library the split's routines are built from.
+  const { error: disciplineError } = await supabase.rpc("activate_discipline", {
+    p_slug: d.disciplineSlug,
+  })
+  if (disciplineError) {
+    return { error: "Could not set your discipline. Please try again." }
+  }
+
   // Create the split's routines BEFORE marking onboarding complete: a failure
   // here leaves onboarding incomplete and retryable (creation is name-idempotent),
   // never a "complete" profile with zero routines.

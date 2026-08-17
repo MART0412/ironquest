@@ -166,7 +166,8 @@ Trend charts use 7-day rolling averages. Goal line drawn at target BF% with proj
 5. **Progress** — weight/BF/measurement charts, photo comparison, weekly check-in flow
 6. **Store** — in-game gear tab + real-life rewards tab (create/redeem)
 7. **Lifetime** (`/stats`) — lifetime totals per movement (reps, hold-seconds, workouts) aggregated from `workout_sets`, each translated into a real-world equivalence with a progress bar to the next one ("312/600 pull-ups to summit the Eiffel Tower"). Crossing a threshold pays a small XP bounty and plays in the same ceremony slot as a skill unlock. Thresholds, conversions and copy are config in `lib/game/equivalences.ts`; adding one is a config edit plus `npm run sync:milestones`, never a migration.
-8. **Settings** — targets, phase (cut/maintain/build), split schedule, strict/neutral default, units (kg/metric default)
+8. **Disciplines** (onboarding step + `/profile` card) — the five ways to train (Calisthenics, Gym & Weights, Running, Cycling, Yoga & Mobility). You choose one at onboarding; a second unlocks at level 15 (`MULTICLASS_MIN_LEVEL`). Locked ones stay on screen, greyed with "Unlocks at level 15" — the aspiration is meant to be visible. Everything that reads the exercise library (skill tree, today's quest, routine builder) is scoped to what you have activated.
+9. **Settings** — targets, phase (cut/maintain/build), split schedule, strict/neutral default, units (kg/metric default)
 
 ---
 
