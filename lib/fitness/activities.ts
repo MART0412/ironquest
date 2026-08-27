@@ -163,9 +163,15 @@ export function activityXp(input: {
   return Math.round(met * minutes * ACTIVITY_XP.XP_PER_MET_MINUTE * multiplier)
 }
 
-/** Points follow the house convention: a tenth of the XP, never multiplied. */
-export function activityPoints(baseXp: number): number {
-  return Math.max(0, Math.round(baseXp / 10))
+/**
+ * Points follow the house convention: a tenth of the XP, never multiplied.
+ * They are derived from what was actually AWARDED, so the daily cap trims
+ * points exactly as it trims XP — otherwise a capped session would still pay
+ * full points, and the cap would only half-work.
+ */
+export function activityPoints(awardedXp: number, multiplier = 1): number {
+  if (awardedXp <= 0 || multiplier <= 0) return 0
+  return Math.max(0, Math.round(awardedXp / multiplier / 10))
 }
 
 export type CappedAward = {

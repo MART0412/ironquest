@@ -16,12 +16,14 @@ const state = (over: {
   hasAnyActive?: boolean
   level?: number
   hasLibrary?: boolean
+  hasActivityLogging?: boolean
 }) =>
   disciplineState({
     isActive: false,
     hasAnyActive: true,
     level: 0,
     hasLibrary: true,
+    hasActivityLogging: false,
     ...over,
   })
 
@@ -70,6 +72,23 @@ describe("disciplineState — content honesty", () => {
     )
   })
 
+  it("opens a discipline whose sessions can be logged, even with no skill tree", () => {
+    // Running has no paths yet, but a run is a run — there is something to do.
+    expect(
+      state({ level: MULTICLASS_MIN_LEVEL, hasLibrary: false, hasActivityLogging: true })
+    ).toBe("available")
+  })
+
+  it("still says coming-soon when there is neither a tree nor a way to log it", () => {
+    expect(
+      state({ level: MULTICLASS_MIN_LEVEL, hasLibrary: false, hasActivityLogging: false })
+    ).toBe("coming-soon")
+  })
+
+  it("keeps the level gate ahead of loggability", () => {
+    expect(state({ level: 3, hasLibrary: false, hasActivityLogging: true })).toBe("locked")
+  })
+
   it("refuses activation for anything that isn't available", () => {
     expect(canActivate("available")).toBe(true)
     expect(canActivate("locked")).toBe(false)
@@ -99,8 +118,11 @@ describe("copy and metadata", () => {
       "running",
       "yoga",
     ])
-    const playable = Object.values(DISCIPLINE_META).filter((m) => m.hasLibrary)
-    expect(playable.map((m) => m.slug)).toEqual(["calisthenics"])
+    const withTrees = Object.values(DISCIPLINE_META).filter((m) => m.hasLibrary)
+    expect(withTrees.map((m) => m.slug)).toEqual(["calisthenics"])
+    // Running and cycling are trainable through /activity rather than a tree.
+    const loggable = Object.values(DISCIPLINE_META).filter((m) => m.hasActivityLogging)
+    expect(loggable.map((m) => m.slug).sort()).toEqual(["cycling", "running"])
   })
 
   it("falls back safely for a discipline this build doesn't know", () => {
@@ -108,6 +130,7 @@ describe("copy and metadata", () => {
       slug: "swimming",
       tagline: "",
       hasLibrary: false,
+      hasActivityLogging: false,
     })
     expect(metaFor("gym").hasLibrary).toBe(false)
     expect(metaFor("calisthenics").hasLibrary).toBe(true)
@@ -135,16 +158,18 @@ describe("buildDisciplineOptions", () => {
     expect(options[0].isPrimary).toBe(true)
   })
 
-  it("opens the library-less ones as coming-soon once the gate is passed", () => {
+  it("opens what you can actually do once the gate is passed", () => {
     const options = buildDisciplineOptions({
       disciplines: catalog,
       active: [{ slug: "calisthenics", isPrimary: true }],
       level: MULTICLASS_MIN_LEVEL,
     })
+    // Gym has neither a tree nor a logging flow, so it stays honest about it.
+    // Running has no tree but its sessions are loggable, which is enough.
     expect(options.map((o) => o.state)).toEqual([
       "active",
       "coming-soon",
-      "coming-soon",
+      "available",
     ])
   })
 
@@ -157,7 +182,7 @@ describe("buildDisciplineOptions", () => {
     expect(options.map((o) => o.state)).toEqual([
       "available",
       "coming-soon",
-      "coming-soon",
+      "available",
     ])
     expect(options.every((o) => o.isPrimary === false)).toBe(true)
   })

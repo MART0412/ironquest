@@ -59,8 +59,16 @@ describe("activityXp — duration × intensity", () => {
   it("never multiplies points", () => {
     const base = activityXp({ met: 9.8, minutes: 30 })
     expect(activityPoints(base)).toBe(10)
-    // Points come off the unmultiplied award, so a streak can't inflate them.
-    expect(activityPoints(activityXp({ met: 9.8, minutes: 30 }))).toBe(10)
+    // A x1.5 streak pays 154 XP but still only the base 10 points.
+    const boosted = activityXp({ met: 9.8, minutes: 30, multiplier: 1.5 })
+    expect(activityPoints(boosted, 1.5)).toBe(10)
+  })
+
+  it("trims points with the cap, exactly as it trims XP", () => {
+    // A session worth 103 that only had 47 of the allowance left pays 5, not 10
+    // — otherwise the cap would stop the XP and leave the points farmable.
+    expect(activityPoints(47)).toBe(5)
+    expect(activityPoints(0)).toBe(0)
   })
 
   it("is zero for a session with no duration or no intensity", () => {

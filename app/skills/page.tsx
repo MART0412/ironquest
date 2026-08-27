@@ -93,6 +93,7 @@ export default async function SkillsPage() {
     slug: discipline.slug,
     name: discipline.name,
     hasLibrary: metaFor(discipline.slug).hasLibrary,
+    hasActivityLogging: metaFor(discipline.slug).hasActivityLogging,
     tracks: (paths ?? [])
       .filter((p) => p.disciplines?.slug === discipline.slug)
       .map((p) => trackByPath.get(p.slug))

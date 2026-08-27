@@ -22,10 +22,16 @@ export type DisciplineMeta = {
   tagline: string
   /**
    * Whether this discipline has exercises and skill paths yet. Only
-   * calisthenics does; flipping one of these to true is how the next slice
-   * turns a discipline on.
+   * calisthenics does; flipping one of these to true is how a later slice
+   * turns a discipline's tree on.
    */
   hasLibrary: boolean
+  /**
+   * Whether its sessions can be logged today (Mode C, /activity). Running and
+   * cycling have no skill paths yet but are fully trainable, which is enough
+   * to make them worth activating.
+   */
+  hasActivityLogging: boolean
 }
 
 export const DISCIPLINE_META: Record<string, DisciplineMeta> = {
@@ -33,26 +39,31 @@ export const DISCIPLINE_META: Record<string, DisciplineMeta> = {
     slug: "calisthenics",
     tagline: "Your own bodyweight, mastered one skill at a time.",
     hasLibrary: true,
+    hasActivityLogging: false,
   },
   gym: {
     slug: "gym",
     tagline: "Barbells, dumbbells and machines — load the movement.",
     hasLibrary: false,
+    hasActivityLogging: false,
   },
   running: {
     slug: "running",
     tagline: "Distance, pace and the long patient build.",
     hasLibrary: false,
+    hasActivityLogging: true,
   },
   cycling: {
     slug: "cycling",
     tagline: "Kilometres, climbs and time in the saddle.",
     hasLibrary: false,
+    hasActivityLogging: true,
   },
   yoga: {
     slug: "yoga",
     tagline: "Mobility, balance and the positions strength forgets.",
     hasLibrary: false,
+    hasActivityLogging: false,
   },
 }
 
@@ -80,10 +91,14 @@ export function disciplineState(input: {
   hasAnyActive: boolean
   level: number
   hasLibrary: boolean
+  /** A discipline you can log sessions for is worth activating even with no tree. */
+  hasActivityLogging?: boolean
 }): DisciplineState {
   if (input.isActive) return "active"
   if (input.hasAnyActive && input.level < MULTICLASS_MIN_LEVEL) return "locked"
-  if (!input.hasLibrary) return "coming-soon"
+  // Playable means there is something to *do*: a skill tree to climb, or a
+  // way to log the sessions. Running has no paths yet but a run is a run.
+  if (!input.hasLibrary && !input.hasActivityLogging) return "coming-soon"
   return "available"
 }
 
@@ -109,7 +124,12 @@ export function multiclassProgress(level: number): {
 /** Metadata for a slug, with a safe fallback for a discipline we don't know. */
 export function metaFor(slug: string): DisciplineMeta {
   return (
-    DISCIPLINE_META[slug] ?? { slug, tagline: "", hasLibrary: false }
+    DISCIPLINE_META[slug] ?? {
+      slug,
+      tagline: "",
+      hasLibrary: false,
+      hasActivityLogging: false,
+    }
   )
 }
 
@@ -147,6 +167,7 @@ export function buildDisciplineOptions(input: {
         hasAnyActive,
         level: input.level,
         hasLibrary: meta.hasLibrary,
+        hasActivityLogging: meta.hasActivityLogging,
       }),
       isPrimary: mine?.isPrimary ?? false,
     }

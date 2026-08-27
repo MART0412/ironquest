@@ -28,6 +28,8 @@ export type DisciplineGroup = {
   tracks: PathTrack[]
   /** False while a discipline is activated but has no library yet. */
   hasLibrary: boolean
+  /** True when its sessions are logged from /activity instead of a tree. */
+  hasActivityLogging: boolean
 }
 
 export function SkillTreeView({
@@ -94,7 +96,9 @@ export function SkillTreeView({
             <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
               {group.hasLibrary
                 ? "No paths in this discipline yet."
-                : `${group.name} is activated, but its skill paths aren't built yet — they're coming in a later update.`}
+                : group.hasActivityLogging
+                  ? `${group.name} has no skill paths yet — log your sessions from Log activity on the home screen.`
+                  : `${group.name} is activated, but its skill paths aren't built yet — they're coming in a later update.`}
             </p>
           )}
         </section>

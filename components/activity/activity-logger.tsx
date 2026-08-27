@@ -85,8 +85,9 @@ export function ActivityLogger({ activities }: { activities: Activity[] }) {
 
         {result.xp === 0 && result.capped && (
           <p className="w-full rounded-xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-            You&apos;ve hit today&apos;s activity cap of {ACTIVITY_XP.DAILY_CAP} XP.
-            The session is recorded — it just doesn&apos;t pay again today.
+            {/* One template literal: JSX eats the space around a wrapped
+                expression, which turned this into "150XP". */}
+            {`You've hit today's activity cap of ${ACTIVITY_XP.DAILY_CAP} XP. The session is recorded — it just doesn't pay again today.`}
           </p>
         )}
         {result.xp > 0 && result.capped && (
