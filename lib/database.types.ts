@@ -39,6 +39,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      activities: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          kind: string
+          met: number
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          kind: string
+          met: number
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          kind?: string
+          met?: number
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       checkins: {
         Row: {
           arm_cm: number | null
@@ -899,9 +929,14 @@ export type Database = {
       }
       workouts: {
         Row: {
+          activity_slug: string | null
           created_at: string
           date: string
+          distance_km: number | null
+          duration_min: number | null
           id: string
+          kind: string
+          notes: string | null
           routine_id: string | null
           status: string
           updated_at: string
@@ -909,9 +944,14 @@ export type Database = {
           xp_awarded: number
         }
         Insert: {
+          activity_slug?: string | null
           created_at?: string
           date: string
+          distance_km?: number | null
+          duration_min?: number | null
           id?: string
+          kind?: string
+          notes?: string | null
           routine_id?: string | null
           status?: string
           updated_at?: string
@@ -919,9 +959,14 @@ export type Database = {
           xp_awarded?: number
         }
         Update: {
+          activity_slug?: string | null
           created_at?: string
           date?: string
+          distance_km?: number | null
+          duration_min?: number | null
           id?: string
+          kind?: string
+          notes?: string | null
           routine_id?: string | null
           status?: string
           updated_at?: string
@@ -1023,6 +1068,15 @@ export type Database = {
         }[]
       }
       lifetime_totals: { Args: { p_user: string }; Returns: Json }
+      log_activity: {
+        Args: {
+          p_activity_slug: string
+          p_distance_km?: number
+          p_duration_min: number
+          p_notes?: string
+        }
+        Returns: Json
+      }
       log_meal: {
         Args: {
           p_carbs?: number

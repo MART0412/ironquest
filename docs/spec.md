@@ -92,7 +92,7 @@ Each node has: unlock criteria (e.g., "3×8 strict pull-ups"), demo notes, and X
 
 ## 4. Workouts
 
-### 4.1 Two logging modes (your pick: mix)
+### 4.1 Three logging modes (your pick: mix)
 
 **Mode A — Routine check-off (default, <20 sec):**
 - Pre-built routines from your declared split (e.g., "Push Day A: 4×8 push-ups, 3×10 dips, 3×30s pseudo-planche lean")
@@ -102,6 +102,12 @@ Each node has: unlock criteria (e.g., "3×8 strict pull-ups"), demo notes, and X
 **Mode B — Full detail:**
 - Exercise picker (calisthenics library + custom), sets × reps or hold time, RPE optional
 - Used when deviating from routine or testing skill unlocks
+
+**Mode C — Duration sessions (`/activity`):**
+- For anything measured in minutes rather than reps: runs and rides for the endurance disciplines, plus quick bonus activities (jog, jump rope, brisk walk…) available to every user whatever they train.
+- Pick a preset, confirm the duration, optionally add distance and a note. XP = duration × MET intensity, capped per day so it can't be farmed; a session of 10 minutes or more counts as a streak day on the same rules as a workout.
+- MET values live in `lib/fitness/activities.ts` and are shared with the Phase 4 compensation feature.
+- **Manual entry only.** GPS tracking and wearable/Strava import are a future integration.
 
 ### 4.2 Routine builder
 

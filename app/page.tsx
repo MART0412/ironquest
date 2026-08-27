@@ -168,6 +168,12 @@ export default async function Home() {
         >
           Log meal
         </Link>
+        <Link
+          href="/activity"
+          className={buttonVariants({ variant: "outline", size: "lg" }) + " col-span-2"}
+        >
+          Log activity
+        </Link>
       </section>
 
       <section className="grid grid-cols-2 gap-3" aria-label="Explore">
