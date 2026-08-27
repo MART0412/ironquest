@@ -7,6 +7,7 @@ import { useState, useTransition } from "react"
 import {
   Celebration,
   milestoneEntries,
+  unlockEntries,
   type CelebrationEntry,
 } from "@/components/game/celebration"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -58,7 +59,11 @@ export function ActivityLogger({ activities }: { activities: Activity[] }) {
         return
       }
       setResult(response.result)
-      const ceremony = milestoneEntries(response.result.equivalences ?? [])
+      // Ladder rungs first, then any real-world milestone the session crossed.
+      const ceremony = [
+        ...unlockEntries(response.result.unlocks ?? []),
+        ...milestoneEntries(response.result.equivalences ?? []),
+      ]
       if (ceremony.length > 0) setCelebrating(ceremony)
       router.refresh()
     })

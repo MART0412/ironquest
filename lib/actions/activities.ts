@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 
+import type { UnlockEntry } from "@/components/game/celebration"
 import type { MilestoneAward } from "@/lib/game/equivalences"
 import { createClient } from "@/lib/supabase/server"
 import {
@@ -33,6 +34,8 @@ export type ActivityResult = {
   milestones: number
   reset: boolean
   equivalences: MilestoneAward[]
+  /** Endurance ladder rungs this session cleared. */
+  unlocks: UnlockEntry[]
 }
 
 /**

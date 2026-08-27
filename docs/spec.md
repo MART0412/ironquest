@@ -80,6 +80,14 @@ The RPG layer is a **calisthenics skill tree** — because in bodyweight trainin
 
 Each node has: unlock criteria (e.g., "3×8 strict pull-ups"), demo notes, and XP bounty. Unlocking a node lights it up on the tree and levels the corresponding character stat (STR / PULL / CORE / LEGS / BALANCE — displayed as an RPG stat radar).
 
+### 3.1a Endurance ladders (running, cycling)
+
+Endurance disciplines have their own paths, cleared by **logging a session** rather than sets: a Distance Path, a Pace Path (speed for cycling) and a Consistency Path per discipline. Criteria come in three kinds — `distance` and `pace` judged on one session, `frequency` judged across a rolling window.
+
+Rungs are credited the way calisthenics fast-track works, but **only where they nest**: a marathon genuinely contains a 5 km, so the rungs below the one you reached are credited at the reduced rate. A frequency window contains nothing — three runs in a week says nothing about ten in a month — so those pay full price for exactly what was met. Each path awards its own deepest rung, so one session can top two ladders.
+
+The stat radar is per discipline: calisthenics keeps its five, running charts DISTANCE / PACE / CONSISTENCY and cycling DISTANCE / SPEED / CONSISTENCY.
+
 ### 3.2 Character Sheet
 
 - Avatar with visual gear from points store

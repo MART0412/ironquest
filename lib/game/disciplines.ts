@@ -50,13 +50,13 @@ export const DISCIPLINE_META: Record<string, DisciplineMeta> = {
   running: {
     slug: "running",
     tagline: "Distance, pace and the long patient build.",
-    hasLibrary: false,
+    hasLibrary: true,
     hasActivityLogging: true,
   },
   cycling: {
     slug: "cycling",
     tagline: "Kilometres, climbs and time in the saddle.",
-    hasLibrary: false,
+    hasLibrary: true,
     hasActivityLogging: true,
   },
   yoga: {

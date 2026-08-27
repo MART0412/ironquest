@@ -12,7 +12,7 @@ import { resolveCharacter } from "@/lib/game/avatar"
 import { buildDisciplineOptions } from "@/lib/game/disciplines"
 import { levelFromXp } from "@/lib/game/level"
 import { multiplierFor } from "@/lib/game/streak"
-import { computePathStats } from "@/lib/game/stats"
+import { computePathStats, radarFor } from "@/lib/game/stats"
 import { createClient } from "@/lib/supabase/server"
 
 type CosmeticMeta = { accent?: string; slot?: string }
@@ -103,7 +103,20 @@ export default async function ProfilePage() {
   }
   const unlockedCount = unlockedIds.size
 
-  const stats = computePathStats(progressByPath)
+  // One radar per discipline the user actually trains: calisthenics keeps its
+  // pentagon, running and cycling get their own three axes. A discipline with
+  // no radar configured simply isn't charted.
+  const radars = (mine ?? [])
+    .map((row) => ({ slug: row.disciplines!.slug, radar: radarFor(row.disciplines!.slug) }))
+    .filter((entry): entry is { slug: string; radar: NonNullable<typeof entry.radar> } =>
+      entry.radar !== null
+    )
+    .map((entry) => ({
+      slug: entry.slug,
+      name: disciplineOptions.find((o) => o.slug === entry.slug)?.name ?? entry.slug,
+      axes: entry.radar.axes,
+      stats: computePathStats(progressByPath, entry.radar.weights, entry.radar.axes),
+    }))
 
   // An equipped theme overrides --primary for the whole page (radar, avatar accent, title).
   const themeStyle = themeAccent
@@ -150,14 +163,18 @@ export default async function ProfilePage() {
         </div>
       </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Stats</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <StatRadar stats={stats} />
-        </CardContent>
-      </Card>
+      {radars.map((radar) => (
+        <Card key={radar.slug} data-radar={radar.slug}>
+          <CardHeader>
+            <CardTitle>
+              {radars.length > 1 ? `${radar.name} stats` : "Stats"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <StatRadar stats={radar.stats} axes={radar.axes} />
+          </CardContent>
+        </Card>
+      ))}
 
       <Card>
         <CardHeader>

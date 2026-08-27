@@ -3,10 +3,13 @@
 import { X } from "lucide-react"
 import { useState } from "react"
 
+import Link from "next/link"
+
 import { ChallengePanel } from "@/components/skills/challenge-panel"
 import type { BestPerf } from "@/components/skills/skill-tree-view"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import type { AttemptResult } from "@/lib/actions/challenges"
+import { isEnduranceCriteria } from "@/lib/game/skills"
 import type { PathNode } from "@/lib/game/paths"
 import { MX_TZ } from "@/lib/game/streak"
 import { cn } from "@/lib/utils"
@@ -43,17 +46,24 @@ export function NodeDetailSheet({
   if (!node) return null
 
   const criteria = node.criteria
+  // An endurance node is cleared by logging a session, not by beating a rep
+  // count, so it has no "your best" bar and no inline attempt panel.
+  const endurance = criteria ? isEnduranceCriteria(criteria) : false
+  const setsCriteria =
+    criteria && (criteria.kind === "reps" || criteria.kind === "hold")
+      ? criteria
+      : null
   const target =
-    criteria?.kind === "reps"
-      ? { label: "reps", goal: criteria.reps, have: best?.reps ?? 0 }
-      : criteria?.kind === "hold"
-        ? { label: "sec", goal: criteria.seconds, have: best?.seconds ?? 0 }
+    setsCriteria?.kind === "reps"
+      ? { label: "reps", goal: setsCriteria.reps, have: best?.reps ?? 0 }
+      : setsCriteria?.kind === "hold"
+        ? { label: "sec", goal: setsCriteria.seconds, have: best?.seconds ?? 0 }
         : null
 
   // The frontier node is a plain attempt; anything further right is a
   // fast-track that also credits the skills it skips.
   const fastTrack = node.state === "locked"
-  const canAttempt = node.state !== "unlocked" && !!criteria
+  const canAttempt = node.state !== "unlocked" && !!setsCriteria
 
   function close() {
     setAttempting(false)
@@ -128,7 +138,7 @@ export function NodeDetailSheet({
           </div>
         )}
 
-        {node.state === "locked" && node.prerequisiteName && !attempting && (
+        {node.state === "locked" && node.prerequisiteName && !attempting && !endurance && (
           <p className="mt-4 text-sm text-muted-foreground">
             🔒 Normally you&apos;d unlock{" "}
             <span className="font-medium text-foreground">
@@ -137,11 +147,27 @@ export function NodeDetailSheet({
             first — or challenge this one directly.
           </p>
         )}
-        {node.state === "next" && !attempting && (
+        {node.state === "next" && !attempting && !endurance && (
           <p className="mt-4 text-sm text-muted-foreground">
             Hit the criteria in a logged workout to light this node and earn{" "}
             <span className="font-medium text-foreground">+200 XP</span>.
           </p>
+        )}
+
+        {endurance && node.state !== "unlocked" && (
+          <div className="mt-4 flex flex-col gap-2">
+            <p className="text-sm text-muted-foreground">
+              Clear this by logging a session that meets it — the engine reads
+              what you logged, same as everywhere else.
+            </p>
+            <Link
+              href="/activity"
+              className={buttonVariants({ size: "lg", className: "h-11 w-full" })}
+              onClick={close}
+            >
+              Log activity
+            </Link>
+          </div>
         )}
 
         {canAttempt && !attempting && (
@@ -159,7 +185,7 @@ export function NodeDetailSheet({
             target={{
               exerciseId: node.id,
               name: node.name,
-              criteria,
+              criteria: setsCriteria,
               cascadeCount,
             }}
             fastTrack={fastTrack}

@@ -342,7 +342,14 @@ export function WorkoutCheckoff({
                       target={{
                         exerciseId: offer.exercise_id,
                         name: offer.name,
-                        criteria: offer.criteria,
+                        // Offers only ever come from the sets engine, which
+                        // reads workout_sets; narrow rather than cast.
+                        criteria:
+                          offer.criteria &&
+                          (offer.criteria.kind === "reps" ||
+                            offer.criteria.kind === "hold")
+                            ? offer.criteria
+                            : null,
                       }}
                       onResult={(attempt) => {
                         setAttempting(null)

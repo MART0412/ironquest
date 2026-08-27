@@ -9,9 +9,115 @@ export const PR_XP = { xp: 75, points: 10 } as const
 export type UnlockCriteria =
   | { kind: "reps"; sets: number; reps: number; description?: string }
   | { kind: "hold"; sets: number; seconds: number; description?: string }
+  // Endurance kinds (Phase 3). `activities` lists the activity slugs that
+  // count, so a jog with 5 km logged is a 5 km run in every sense that matters.
+  | {
+      kind: "distance"
+      activities: string[]
+      km: number
+      description?: string
+    }
+  | {
+      kind: "pace"
+      activities: string[]
+      /** The session must be at least this far to count at all. */
+      minKm: number
+      /** Average minutes per kilometre, at most. Lower is faster. */
+      maxPacePerKm: number
+      description?: string
+    }
+  | {
+      kind: "frequency"
+      activities: string[]
+      count: number
+      windowDays: number
+      description?: string
+    }
+
+/** The sets-based kinds — what the check-off and challenge flows speak. */
+export type SetsCriteria = Extract<
+  UnlockCriteria,
+  { kind: "reps" } | { kind: "hold" }
+>
+
+/** The session-based kinds — what a logged run or ride is judged against. */
+export type EnduranceCriteria = Exclude<UnlockCriteria, SetsCriteria>
 
 /** A set as stored in workout_sets: one of reps/seconds is populated. */
 export type LoggedSet = { reps: number | null; seconds: number | null }
+
+/** A duration-based session, as stored on the workouts row. */
+export type LoggedSession = {
+  activitySlug: string
+  durationMin: number
+  distanceKm: number | null
+  /** Calendar date of the session (YYYY-MM-DD, Mexico City). */
+  date: string
+}
+
+/** True when a criterion is judged on sessions rather than sets. */
+export function isEnduranceCriteria(
+  criteria: UnlockCriteria
+): criteria is EnduranceCriteria {
+  return (
+    criteria.kind === "distance" ||
+    criteria.kind === "pace" ||
+    criteria.kind === "frequency"
+  )
+}
+
+/** Average minutes per kilometre, or null when there is no distance to divide by. */
+export function pacePerKm(session: LoggedSession): number | null {
+  if (!session.distanceKm || session.distanceKm <= 0) return null
+  if (session.durationMin <= 0) return null
+  return session.durationMin / session.distanceKm
+}
+
+/**
+ * Whether logged sessions satisfy an endurance criterion.
+ *
+ * `distance` and `pace` are judged on a SINGLE session — you either covered the
+ * distance in one go or you didn't; adding up a week of short runs is not a
+ * 10 km run. `frequency` is judged across the window, which is the whole point
+ * of it.
+ *
+ * `today` anchors the rolling window; sessions outside it are ignored.
+ */
+export function meetsEnduranceCriteria(
+  criteria: UnlockCriteria,
+  sessions: LoggedSession[],
+  today: string
+): boolean {
+  if (!isEnduranceCriteria(criteria)) return false
+
+  const qualifying = sessions.filter((s) =>
+    criteria.activities.includes(s.activitySlug)
+  )
+
+  if (criteria.kind === "distance") {
+    return qualifying.some((s) => (s.distanceKm ?? 0) >= criteria.km)
+  }
+
+  if (criteria.kind === "pace") {
+    return qualifying.some((s) => {
+      if ((s.distanceKm ?? 0) < criteria.minKm) return false
+      const pace = pacePerKm(s)
+      return pace !== null && pace <= criteria.maxPacePerKm
+    })
+  }
+
+  // frequency: sessions inside the rolling window ending today.
+  const cutoff = addDaysIso(today, -(criteria.windowDays - 1))
+  const inWindow = qualifying.filter((s) => s.date >= cutoff && s.date <= today)
+  return inWindow.length >= criteria.count
+}
+
+/** Date-string arithmetic at UTC noon, so DST can never shift the day. */
+function addDaysIso(dateStr: string, days: number): string {
+  const d = new Date(`${dateStr}T12:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
+}
 
 /**
  * Whether this workout's sets for an exercise satisfy its unlock criteria.
@@ -26,8 +132,15 @@ export function meetsCriteria(
     const qualifying = sets.filter((s) => (s.reps ?? 0) >= criteria.reps).length
     return qualifying >= criteria.sets
   }
-  const qualifying = sets.filter((s) => (s.seconds ?? 0) >= criteria.seconds).length
-  return qualifying >= criteria.sets
+  if (criteria.kind === "hold") {
+    const qualifying = sets.filter(
+      (s) => (s.seconds ?? 0) >= criteria.seconds
+    ).length
+    return qualifying >= criteria.sets
+  }
+  // An endurance criterion is never satisfied by sets — it is judged on
+  // sessions, by meetsEnduranceCriteria.
+  return false
 }
 
 /**

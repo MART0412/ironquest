@@ -8,12 +8,16 @@ import {
   attemptChallenge,
   type AttemptResult,
 } from "@/lib/actions/challenges"
-import type { UnlockCriteria } from "@/lib/game/skills"
+import type { SetsCriteria } from "@/lib/game/skills"
 
 export type ChallengeTarget = {
   exerciseId: string
   name: string
-  criteria: UnlockCriteria | null
+  /**
+   * Sets-based only: an endurance node is cleared by logging a session from
+   * /activity, not by an inline attempt panel.
+   */
+  criteria: SetsCriteria | null
   /** Skills earlier in the path that a fast-track attempt would credit. */
   cascadeCount?: number
 }

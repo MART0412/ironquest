@@ -1043,6 +1043,15 @@ export type Database = {
         Returns: Json
       }
       decline_challenge: { Args: { p_exercise_id: string }; Returns: undefined }
+      endurance_criteria_met: {
+        Args: {
+          p_criteria: Json
+          p_today: string
+          p_user: string
+          p_workout: string
+        }
+        Returns: boolean
+      }
       evaluate_milestones: {
         Args: {
           p_before: Json

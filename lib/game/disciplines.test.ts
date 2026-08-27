@@ -110,7 +110,7 @@ describe("copy and metadata", () => {
     expect(multiclassProgress(40)).toEqual({ reached: true, remaining: 0 })
   })
 
-  it("ships exactly the five seeded disciplines, with only calisthenics playable", () => {
+  it("ships exactly the five seeded disciplines, three of them playable", () => {
     expect(Object.keys(DISCIPLINE_META).sort()).toEqual([
       "calisthenics",
       "cycling",
@@ -118,11 +118,20 @@ describe("copy and metadata", () => {
       "running",
       "yoga",
     ])
+    // Running and cycling have both a tree and a logging flow now; gym and
+    // yoga have neither, and still say so.
     const withTrees = Object.values(DISCIPLINE_META).filter((m) => m.hasLibrary)
-    expect(withTrees.map((m) => m.slug)).toEqual(["calisthenics"])
-    // Running and cycling are trainable through /activity rather than a tree.
+    expect(withTrees.map((m) => m.slug).sort()).toEqual([
+      "calisthenics",
+      "cycling",
+      "running",
+    ])
     const loggable = Object.values(DISCIPLINE_META).filter((m) => m.hasActivityLogging)
     expect(loggable.map((m) => m.slug).sort()).toEqual(["cycling", "running"])
+    const empty = Object.values(DISCIPLINE_META).filter(
+      (m) => !m.hasLibrary && !m.hasActivityLogging
+    )
+    expect(empty.map((m) => m.slug).sort()).toEqual(["gym", "yoga"])
   })
 
   it("falls back safely for a discipline this build doesn't know", () => {

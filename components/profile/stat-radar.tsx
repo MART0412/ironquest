@@ -1,4 +1,5 @@
-// RPG stat radar (spec §3.2). Single-series pentagon over the five stats.
+// RPG stat radar (spec §3.2). Single series over whatever axes the discipline
+// defines — a pentagon for calisthenics, a triangle for running and cycling.
 // Theme-token discipline: muted grid, primary fill, foreground ink labels.
 
 import { STAT_KEYS } from "@/lib/game/stats"
@@ -9,9 +10,9 @@ const CENTER = SIZE / 2
 const RADIUS = 92
 const RINGS = [0.25, 0.5, 0.75, 1]
 
-// Axis i at -90° + 72°·i (STR at top, clockwise).
-function pointFor(index: number, value: number): [number, number] {
-  const angle = (-90 + index * (360 / STAT_KEYS.length)) * (Math.PI / 180)
+// Axis i starts at the top and goes clockwise, whatever the axis count.
+function pointFor(index: number, value: number, axisCount: number): [number, number] {
+  const angle = (-90 + index * (360 / axisCount)) * (Math.PI / 180)
   return [
     CENTER + RADIUS * value * Math.cos(angle),
     CENTER + RADIUS * value * Math.sin(angle),
@@ -19,11 +20,18 @@ function pointFor(index: number, value: number): [number, number] {
 }
 
 function polygon(values: number[]): string {
-  return values.map((v, i) => pointFor(i, v).join(",")).join(" ")
+  return values.map((v, i) => pointFor(i, v, values.length).join(",")).join(" ")
 }
 
-export function StatRadar({ stats }: { stats: Record<StatKey, number> }) {
-  const values = STAT_KEYS.map((s) => stats[s])
+export function StatRadar({
+  stats,
+  axes = STAT_KEYS,
+}: {
+  stats: Record<StatKey, number>
+  /** Axis order, top-first and clockwise. Defaults to the calisthenics five. */
+  axes?: StatKey[]
+}) {
+  const values = axes.map((s) => stats[s] ?? 0)
 
   return (
     <svg
@@ -36,15 +44,15 @@ export function StatRadar({ stats }: { stats: Record<StatKey, number> }) {
       {RINGS.map((r) => (
         <polygon
           key={r}
-          points={polygon(STAT_KEYS.map(() => r))}
+          points={polygon(axes.map(() => r))}
           fill="none"
           className="stroke-border"
           strokeWidth={1}
         />
       ))}
       {/* axes */}
-      {STAT_KEYS.map((_, i) => {
-        const [x, y] = pointFor(i, 1)
+      {axes.map((_, i) => {
+        const [x, y] = pointFor(i, 1, axes.length)
         return (
           <line key={i} x1={CENTER} y1={CENTER} x2={x} y2={y} className="stroke-border" strokeWidth={1} />
         )
@@ -58,13 +66,13 @@ export function StatRadar({ stats }: { stats: Record<StatKey, number> }) {
         strokeLinejoin="round"
       />
       {values.map((v, i) => {
-        const [x, y] = pointFor(i, v)
+        const [x, y] = pointFor(i, v, axes.length)
         return <circle key={i} cx={x} cy={y} r={3} className="fill-primary" />
       })}
 
       {/* axis labels + values */}
-      {STAT_KEYS.map((stat, i) => {
-        const [lx, ly] = pointFor(i, 1.28)
+      {axes.map((stat, i) => {
+        const [lx, ly] = pointFor(i, 1.28, axes.length)
         return (
           <text
             key={stat}
@@ -75,7 +83,7 @@ export function StatRadar({ stats }: { stats: Record<StatKey, number> }) {
             className="fill-foreground text-[11px] font-semibold"
           >
             {stat}
-            <tspan className="fill-muted-foreground"> {Math.round(stats[stat] * 100)}</tspan>
+            <tspan className="fill-muted-foreground"> {Math.round((stats[stat] ?? 0) * 100)}</tspan>
           </text>
         )
       })}

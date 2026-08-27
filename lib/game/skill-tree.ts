@@ -8,7 +8,18 @@
 // schema/routine compatibility), but it no longer drives adjacency or stats.
 
 export type BranchKey = "push" | "pull" | "core" | "legs" | "static"
-export type StatKey = "STR" | "PULL" | "CORE" | "LEGS" | "BALANCE"
+export type StatKey =
+  // Calisthenics
+  | "STR"
+  | "PULL"
+  | "CORE"
+  | "LEGS"
+  | "BALANCE"
+  // Endurance disciplines
+  | "DISTANCE"
+  | "PACE"
+  | "SPEED"
+  | "CONSISTENCY"
 export type NodeState = "unlocked" | "next" | "locked"
 
 /**

@@ -12,11 +12,15 @@ export default async function NewRoutinePage() {
 
   const { data: mine } = await supabase
     .from("user_disciplines")
-    .select("discipline_id")
+    .select("discipline_id, disciplines!inner(logging_style)")
 
   // The picker only offers movements from disciplines the user has activated,
   // so a routine can't be built out of a discipline they haven't unlocked.
-  const activeIds = (mine ?? []).map((row) => row.discipline_id)
+  // Sets-based disciplines only: a run is logged from /activity, so its nodes
+  // must never show up in a routine as though they were exercises.
+  const activeIds = (mine ?? [])
+    .filter((row) => row.disciplines?.logging_style === "sets")
+    .map((row) => row.discipline_id)
 
   const { data: exercises } = await supabase
     .from("exercises")
