@@ -976,6 +976,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_discipline: { Args: { p_slug: string }; Returns: Json }
       attempt_challenge: {
         Args: { p_exercise_id: string; p_fast_track?: boolean; p_sets?: Json }
         Returns: Json
@@ -996,7 +997,6 @@ export type Database = {
         Args: { p_routine_id?: string; p_sets?: Json }
         Returns: Json
       }
-      activate_discipline: { Args: { p_slug: string }; Returns: Json }
       decline_challenge: { Args: { p_exercise_id: string }; Returns: undefined }
       evaluate_milestones: {
         Args: {
@@ -1023,7 +1023,6 @@ export type Database = {
         }[]
       }
       lifetime_totals: { Args: { p_user: string }; Returns: Json }
-      xp_for_level: { Args: { p_level: number }; Returns: number }
       log_meal: {
         Args: {
           p_carbs?: number
@@ -1057,6 +1056,7 @@ export type Database = {
         }
         Returns: number
       }
+      xp_for_level: { Args: { p_level: number }; Returns: number }
     }
     Enums: {
       [_ in never]: never

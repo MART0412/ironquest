@@ -45,8 +45,9 @@ export function DisciplinesCard({
     <div className="flex flex-col gap-3">
       {!gate.reached && activeCount > 0 && (
         <p className="text-sm text-muted-foreground">
-          A second discipline unlocks at level {MULTICLASS_MIN_LEVEL} — you&apos;re
-          level {level}, {gate.remaining} to go.
+          {/* One template literal: JSX swallows whitespace around expressions
+              when the sentence wraps, which ate the space before the dash. */}
+          {`A second discipline unlocks at level ${MULTICLASS_MIN_LEVEL} — you're level ${level}, ${gate.remaining} to go.`}
         </p>
       )}
 
